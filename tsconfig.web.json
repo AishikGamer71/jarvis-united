@@ -1,0 +1,25 @@
+{
+  "extends": "@electron-toolkit/tsconfig/tsconfig.web.json",
+  "include": [
+    "apps/desktop/renderer/src/env.d.ts",
+    "apps/desktop/renderer/src/**/*",
+    "apps/desktop/renderer/src/**/*.tsx",
+    "apps/desktop/preload/*.d.ts",
+    "packages/ipc-contracts/**/*"
+  ],
+  "compilerOptions": {
+    "composite": true,
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@renderer/*": [
+        "./apps/desktop/renderer/src/*"
+      ],
+      "@jarvis/ipc-contracts": [
+        "./packages/ipc-contracts/index.ts"
+      ]
+    },
+    "noUnusedLocals": false,
+    "noUnusedParameters": false
+  }
+}
