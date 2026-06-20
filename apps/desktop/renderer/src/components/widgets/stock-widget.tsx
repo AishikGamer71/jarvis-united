@@ -1,31 +1,31 @@
-import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { ResponsiveContainer, AreaChart, Area, Tooltip, YAxis } from 'recharts'
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { ResponsiveContainer, AreaChart, Area, Tooltip, YAxis } from "recharts";
 import {
   RiCloseLine,
   RiArrowUpLine,
   RiArrowDownLine,
   RiLineChartLine,
-  RiScales3Line
-} from 'react-icons/ri'
+  RiScales3Line,
+} from "react-icons/ri";
 
 export default function StockWidget() {
-  const [isVisible, setIsVisible] = useState(false)
-  const [stock, setStock] = useState<any>(null)
+  const [isVisible, setIsVisible] = useState(false);
+  const [stock, setStock] = useState<any>(null);
 
   useEffect(() => {
     const handleEvent = (event: any) => {
-      setStock(event.detail)
-      setIsVisible(true)
-    }
-    window.addEventListener('show-stock', handleEvent)
-    return () => window.removeEventListener('show-stock', handleEvent)
-  }, [])
+      setStock(event.detail);
+      setIsVisible(true);
+    };
+    window.addEventListener("show-stock", handleEvent);
+    return () => window.removeEventListener("show-stock", handleEvent);
+  }, []);
 
-  if (!isVisible || !stock) return null
+  if (!isVisible || !stock) return null;
 
-  const c1 = stock.isPositive1 ? '#10b981' : '#ef4444'
-  const c2 = stock.isPositive2 ? '#3b82f6' : '#f59e0b'
+  const c1 = stock.isPositive1 ? "#10b981" : "#ef4444";
+  const c2 = stock.isPositive2 ? "#3b82f6" : "#f59e0b";
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -49,10 +49,10 @@ export default function StockWidget() {
             )}
           </div>
         </div>
-      )
+      );
     }
-    return null
-  }
+    return null;
+  };
 
   return (
     <div className="fixed inset-0 z-9650 flex items-center justify-center p-10 bg-black/80 backdrop-blur-sm animate-in fade-in duration-500">
@@ -73,7 +73,9 @@ export default function StockWidget() {
             </div>
             <div>
               <h2 className="text-2xl font-black tracking-widest text-white uppercase font-mono">
-                {stock.isComparison ? `${stock.symbol1} vs ${stock.symbol2}` : stock.symbol1}
+                {stock.isComparison
+                  ? `${stock.symbol1} vs ${stock.symbol2}`
+                  : stock.symbol1}
               </h2>
               <p className="text-[10px] text-zinc-500 font-mono mt-0.5 uppercase tracking-widest">
                 REAL-TIME INTRADAY DATA
@@ -97,7 +99,9 @@ export default function StockWidget() {
               {stock.currentPrice1}
             </h1>
             <div className="flex flex-col pb-1">
-              <span className="text-sm font-bold text-zinc-500 mb-1">{stock.symbol1}</span>
+              <span className="text-sm font-bold text-zinc-500 mb-1">
+                {stock.symbol1}
+              </span>
               <div
                 className={`flex items-center gap-1 font-mono font-bold px-2 py-1 rounded-md text-xs`}
                 style={{ backgroundColor: `${c1}33`, color: c1 }}
@@ -117,7 +121,9 @@ export default function StockWidget() {
                 {stock.currentPrice2}
               </h1>
               <div className="flex flex-col pb-1">
-                <span className="text-sm font-bold text-zinc-500 mb-1">{stock.symbol2}</span>
+                <span className="text-sm font-bold text-zinc-500 mb-1">
+                  {stock.symbol2}
+                </span>
                 <div
                   className={`flex items-center gap-1 font-mono font-bold px-2 py-1 rounded-md text-xs`}
                   style={{ backgroundColor: `${c2}33`, color: c2 }}
@@ -144,9 +150,14 @@ export default function StockWidget() {
                 </linearGradient>
               </defs>
               <Tooltip content={<CustomTooltip />} />
-              <YAxis yAxisId="left" domain={['auto', 'auto']} hide />
+              <YAxis yAxisId="left" domain={["auto", "auto"]} hide />
               {stock.isComparison && (
-                <YAxis yAxisId="right" orientation="right" domain={['auto', 'auto']} hide />
+                <YAxis
+                  yAxisId="right"
+                  orientation="right"
+                  domain={["auto", "auto"]}
+                  hide
+                />
               )}
 
               <Area
@@ -172,5 +183,5 @@ export default function StockWidget() {
         </div>
       </motion.div>
     </div>
-  )
+  );
 }

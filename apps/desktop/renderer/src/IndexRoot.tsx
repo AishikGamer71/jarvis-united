@@ -1,170 +1,177 @@
-import { useState, useEffect, useRef } from 'react'
-import MiniOverlay from '@renderer/components/dashboard/mini-overlay'
-import { jarvisService } from './services/jarvis-voice-ai'
-import { getScreenSourceId } from './hooks/use-capture-desktop'
-import JARVIS from './layouts/jarvis-layout'
-import LeafletMapWidget from '@renderer/components/widgets/map-view'
-import ImageWidget from '@renderer/components/widgets/image-widget'
-import EmailWidget from '@renderer/components/widgets/email-widget'
-import WeatherWidget from '@renderer/components/widgets/weather-widget'
-import StockWidget from '@renderer/components/widgets/stock-widget'
-import LiveCodingWidget from '@renderer/components/widgets/live-coding'
-import WormholeWidget from '@renderer/components/widgets/wormhole'
-import OracleWidget from '@renderer/components/widgets/rag-oracle'
-import ResearchWidget from '@renderer/components/widgets/deep-research'
-import SemanticWidget from '@renderer/components/widgets/semantic-search'
-import SmartDropZonesWidget from '@renderer/components/widgets/smart-zone'
+import { useState, useEffect, useRef } from "react";
+import MiniOverlay from "@renderer/components/dashboard/mini-overlay";
+import { jarvisService } from "./services/jarvis-voice-ai";
+import { getScreenSourceId } from "./hooks/use-capture-desktop";
+import JARVIS from "./layouts/jarvis-layout";
+import LeafletMapWidget from "@renderer/components/widgets/map-view";
+import ImageWidget from "@renderer/components/widgets/image-widget";
+import EmailWidget from "@renderer/components/widgets/email-widget";
+import WeatherWidget from "@renderer/components/widgets/weather-widget";
+import StockWidget from "@renderer/components/widgets/stock-widget";
+import LiveCodingWidget from "@renderer/components/widgets/live-coding";
+import WormholeWidget from "@renderer/components/widgets/wormhole";
+import OracleWidget from "@renderer/components/widgets/rag-oracle";
+import ResearchWidget from "@renderer/components/widgets/deep-research";
+import SemanticWidget from "@renderer/components/widgets/semantic-search";
+import SmartDropZonesWidget from "@renderer/components/widgets/smart-zone";
 
-
-export type VisionMode = 'camera' | 'screen' | 'none'
+export type VisionMode = "camera" | "screen" | "none";
 
 const IndexRoot = () => {
-  const [isOverlay, setIsOverlay] = useState(false)
+  const [isOverlay, setIsOverlay] = useState(false);
 
-  const [isSystemActive, setIsSystemActive] = useState(false)
-  const [isMicMuted, setIsMicMuted] = useState(true)
+  const [isSystemActive, setIsSystemActive] = useState(false);
+  const [isMicMuted, setIsMicMuted] = useState(true);
 
-  const [isVideoOn, setIsVideoOn] = useState(false)
-  const [visionMode, setVisionMode] = useState<VisionMode>('none')
+  const [isVideoOn, setIsVideoOn] = useState(false);
+  const [visionMode, setVisionMode] = useState<VisionMode>("none");
 
-  const processingVideoRef = useRef<HTMLVideoElement>(document.createElement('video'))
-  const activeStreamRef = useRef<MediaStream | null>(null)
-  const aiIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const processingVideoRef = useRef<HTMLVideoElement>(
+    document.createElement("video"),
+  );
+  const activeStreamRef = useRef<MediaStream | null>(null);
+  const aiIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    window.electron.ipcRenderer.on('overlay-mode', (_e, mode) => setIsOverlay(mode))
+    window.electron.ipcRenderer.on("overlay-mode", (_e, mode) =>
+      setIsOverlay(mode),
+    );
     return () => {
-      window.electron.ipcRenderer.removeAllListeners('overlay-mode')
-    }
-  }, [])
+      window.electron.ipcRenderer.removeAllListeners("overlay-mode");
+    };
+  }, []);
 
   useEffect(() => {
     const watchdog = setInterval(() => {
       if (isSystemActive && !jarvisService.isConnected) {
-        setIsSystemActive(false)
-        setIsMicMuted(true)
-        stopVision()
+        setIsSystemActive(false);
+        setIsMicMuted(true);
+        stopVision();
       }
-    }, 1000)
-    return () => clearInterval(watchdog)
-  }, [isSystemActive])
+    }, 1000);
+    return () => clearInterval(watchdog);
+  }, [isSystemActive]);
 
   const toggleSystem = async () => {
     if (!isSystemActive) {
       try {
-        await jarvisService.connect()
-        setIsSystemActive(true)
-        setIsMicMuted(false)
-        jarvisService.setMute(false)
+        await jarvisService.connect();
+        setIsSystemActive(true);
+        setIsMicMuted(false);
+        jarvisService.setMute(false);
       } catch (err: any) {
-        if (err.message === 'NO_API_KEY') {
+        if (err.message === "NO_API_KEY") {
           alert(
-            '⚠️ CRITICAL ERROR: Gemini API Key is missing. Please enter it in the Command Center Vault (Settings Tab).'
-          )
+            "⚠️ CRITICAL ERROR: Gemini API Key is missing. Please enter it in the Command Center Vault (Settings Tab).",
+          );
         } else {
-          alert(`Connection failed: ${err.message}`)
+          alert(`Connection failed: ${err.message}`);
         }
-        setIsSystemActive(false)
+        setIsSystemActive(false);
       }
     } else {
-      jarvisService.disconnect()
-      setIsSystemActive(false)
-      setIsMicMuted(true)
-      jarvisService.setMute(true)
-      stopVision()
+      jarvisService.disconnect();
+      setIsSystemActive(false);
+      setIsMicMuted(true);
+      jarvisService.setMute(true);
+      stopVision();
     }
-  }
+  };
 
   const toggleMic = () => {
-    const s = !isMicMuted
-    setIsMicMuted(s)
-    jarvisService.setMute(s)
-  }
+    const s = !isMicMuted;
+    setIsMicMuted(s);
+    jarvisService.setMute(s);
+  };
 
-  const startVision = async (mode: 'camera' | 'screen') => {
-    if (!isSystemActive) return
+  const startVision = async (mode: "camera" | "screen") => {
+    if (!isSystemActive) return;
 
     try {
       if (activeStreamRef.current) {
-        activeStreamRef.current.getTracks().forEach((t) => t.stop())
+        activeStreamRef.current.getTracks().forEach((t) => t.stop());
       }
 
-      let stream: MediaStream
+      let stream: MediaStream;
 
-      if (mode === 'camera') {
+      if (mode === "camera") {
         stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: 640, height: 480 }
-        })
+          video: { width: 640, height: 480 },
+        });
       } else {
-        const sourceId = await getScreenSourceId()
-        if (!sourceId) return
+        const sourceId = await getScreenSourceId();
+        if (!sourceId) return;
         stream = await navigator.mediaDevices.getUserMedia({
           audio: false,
           video: {
             // @ts-ignore
             mandatory: {
-              chromeMediaSource: 'desktop',
+              chromeMediaSource: "desktop",
               chromeMediaSourceId: sourceId,
               maxWidth: 1280,
-              maxHeight: 720
-            }
-          }
-        })
+              maxHeight: 720,
+            },
+          },
+        });
       }
 
-      activeStreamRef.current = stream
+      activeStreamRef.current = stream;
 
-      processingVideoRef.current.srcObject = stream
-      await processingVideoRef.current.play()
+      processingVideoRef.current.srcObject = stream;
+      await processingVideoRef.current.play();
 
-      setVisionMode(mode)
-      setIsVideoOn(true)
+      setVisionMode(mode);
+      setIsVideoOn(true);
 
-      startAIProcessing()
+      startAIProcessing();
 
-      stream.getVideoTracks()[0].onended = () => stopVision()
+      stream.getVideoTracks()[0].onended = () => stopVision();
     } catch (e) {
-      stopVision()
+      stopVision();
     }
-  }
+  };
 
   const stopVision = () => {
-    setIsVideoOn(false)
-    setVisionMode('none')
+    setIsVideoOn(false);
+    setVisionMode("none");
 
     if (activeStreamRef.current) {
-      activeStreamRef.current.getTracks().forEach((t) => t.stop())
-      activeStreamRef.current = null
+      activeStreamRef.current.getTracks().forEach((t) => t.stop());
+      activeStreamRef.current = null;
     }
 
     if (processingVideoRef.current) {
-      processingVideoRef.current.srcObject = null
+      processingVideoRef.current.srcObject = null;
     }
 
     if (aiIntervalRef.current) {
-      clearInterval(aiIntervalRef.current)
-      aiIntervalRef.current = null
+      clearInterval(aiIntervalRef.current);
+      aiIntervalRef.current = null;
     }
-  }
+  };
 
   const startAIProcessing = () => {
-    if (aiIntervalRef.current) clearInterval(aiIntervalRef.current)
+    if (aiIntervalRef.current) clearInterval(aiIntervalRef.current);
 
     aiIntervalRef.current = setInterval(() => {
-      const vid = processingVideoRef.current
-      if (vid && vid.readyState === 4 && jarvisService.socket?.readyState === WebSocket.OPEN) {
-        const canvas = document.createElement('canvas')
-        canvas.width = 800
-        canvas.height = 450
-        const ctx = canvas.getContext('2d')
+      const vid = processingVideoRef.current;
+      if (
+        vid &&
+        vid.readyState === 4 &&
+        jarvisService.socket?.readyState === WebSocket.OPEN
+      ) {
+        const canvas = document.createElement("canvas");
+        canvas.width = 800;
+        canvas.height = 450;
+        const ctx = canvas.getContext("2d");
         if (ctx) {
-          ctx.drawImage(vid, 0, 0, canvas.width, canvas.height)
-          const base64 = canvas.toDataURL('image/jpeg', 0.6).split(',')[1]
-          jarvisService.sendVideoFrame(base64)
+          ctx.drawImage(vid, 0, 0, canvas.width, canvas.height);
+          const base64 = canvas.toDataURL("image/jpeg", 0.6).split(",")[1];
+          jarvisService.sendVideoFrame(base64);
         }
       }
-    }, 2000)
-  }
+    }, 2000);
+  };
 
   if (isOverlay) {
     return (
@@ -180,12 +187,11 @@ const IndexRoot = () => {
           stopVision={stopVision}
         />
       </div>
-    )
+    );
   }
 
   return (
     <div className="flex flex-col h-screen w-screen bg-black overflow-hidden relative border border-emerald-500/20 rounded-xl">
-
       <div className="flex-1 relative">
         <JARVIS
           isSystemActive={isSystemActive}
@@ -211,7 +217,7 @@ const IndexRoot = () => {
       <LiveCodingWidget />
       <ResearchWidget />
     </div>
-  )
-}
+  );
+};
 
-export default IndexRoot
+export default IndexRoot;

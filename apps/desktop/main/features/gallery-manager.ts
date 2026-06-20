@@ -1,104 +1,106 @@
-import { IpcMain, app, shell } from 'electron'
-import fs from 'fs'
-import path from 'path'
-import { pathToFileURL } from 'url'
+import { IpcMain, app, shell } from "electron";
+import fs from "fs";
+import path from "path";
+import { pathToFileURL } from "url";
 
 export default function registerGalleryHandlers(ipcMain: IpcMain) {
-  const GALLERY_DIR = path.resolve(app.getPath('userData'), 'Gallery')
+  const GALLERY_DIR = path.resolve(app.getPath("userData"), "Gallery");
 
   if (!fs.existsSync(GALLERY_DIR)) {
-    fs.mkdirSync(GALLERY_DIR, { recursive: true })
+    fs.mkdirSync(GALLERY_DIR, { recursive: true });
   }
 
-  ipcMain.handle('get-gallery', async () => {
+  ipcMain.handle("get-gallery", async () => {
     try {
-      if (!fs.existsSync(GALLERY_DIR)) return []
+      if (!fs.existsSync(GALLERY_DIR)) return [];
 
       const files = fs
         .readdirSync(GALLERY_DIR)
-        .filter((file) => /\.(png|jpg|jpeg|webp|gif)$/i.test(file))
+        .filter((file) => /\.(png|jpg|jpeg|webp|gif)$/i.test(file));
 
       return files
         .map((file) => {
-          const filePath = path.join(GALLERY_DIR, file)
-          const stats = fs.statSync(filePath)
+          const filePath = path.join(GALLERY_DIR, file);
+          const stats = fs.statSync(filePath);
 
-          const fileUrl = pathToFileURL(filePath).href
+          const fileUrl = pathToFileURL(filePath).href;
 
           return {
             filename: file,
             displayName: file
-              .replace(/_\d+_Generated_by_JARVIS\.png$/, '')
-              .replace(/_/g, ' '), 
+              .replace(/_\d+_Generated_by_JARVIS\.png$/, "")
+              .replace(/_/g, " "),
             path: filePath,
             url: fileUrl,
-            createdAt: stats.birthtime
-          }
+            createdAt: stats.birthtime,
+          };
         })
-        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     } catch (error) {
-      return []
+      return [];
     }
-  })
+  });
 
-  ipcMain.handle('save-image-to-gallery', async (_event, { title, base64Data }) => {
-    try {
-      const safeTitle = (title || 'visual')
-        .replace(/[^a-z0-9]/gi, '_')
-        .toLowerCase()
-        .substring(0, 50)
+  ipcMain.handle(
+    "save-image-to-gallery",
+    async (_event, { title, base64Data }) => {
+      try {
+        const safeTitle = (title || "visual")
+          .replace(/[^a-z0-9]/gi, "_")
+          .toLowerCase()
+          .substring(0, 50);
 
-      const timestamp = Date.now()
-      const fileName = `${safeTitle}_${timestamp}_Generated_by_JARVIS.png`
-      const filePath = path.join(GALLERY_DIR, fileName)
+        const timestamp = Date.now();
+        const fileName = `${safeTitle}_${timestamp}_Generated_by_JARVIS.png`;
+        const filePath = path.join(GALLERY_DIR, fileName);
 
-      const data = base64Data.replace(/^data:image\/\w+;base64,/, '')
-      const buffer = Buffer.from(data, 'base64')
+        const data = base64Data.replace(/^data:image\/\w+;base64,/, "");
+        const buffer = Buffer.from(data, "base64");
 
-      fs.writeFileSync(filePath, buffer)
+        fs.writeFileSync(filePath, buffer);
 
-      return { success: true, path: filePath }
-    } catch (error: any) {
-      return { success: false, error: error.message }
-    }
-  })
-
-  ipcMain.handle('delete-image', async (_event, filename) => {
-    try {
-      const filePath = path.join(GALLERY_DIR, filename)
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath)
-        return true
+        return { success: true, path: filePath };
+      } catch (error: any) {
+        return { success: false, error: error.message };
       }
-      return false
-    } catch (e) {
-      return false
-    }
-  })
+    },
+  );
 
-  ipcMain.handle('open-image-location', async (_event, filePath) => {
-    shell.showItemInFolder(filePath)
-  })
-
-  ipcMain.handle('save-image-external', async (_event, sourcePath) => {
+  ipcMain.handle("delete-image", async (_event, filename) => {
     try {
-      const { dialog } = require('electron')
-      const fs = require('fs')
+      const filePath = path.join(GALLERY_DIR, filename);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  });
+
+  ipcMain.handle("open-image-location", async (_event, filePath) => {
+    shell.showItemInFolder(filePath);
+  });
+
+  ipcMain.handle("save-image-external", async (_event, sourcePath) => {
+    try {
+      const { dialog } = require("electron");
+      const fs = require("fs");
 
       const { filePath } = await dialog.showSaveDialog({
-        title: 'Save Image Copy',
+        title: "Save Image Copy",
         defaultPath: path.basename(sourcePath),
-        filters: [{ name: 'Images', extensions: ['png', 'jpg'] }]
-      })
+        filters: [{ name: "Images", extensions: ["png", "jpg"] }],
+      });
 
       if (filePath) {
-        fs.copyFileSync(sourcePath, filePath)
-        return { success: true }
+        fs.copyFileSync(sourcePath, filePath);
+        return { success: true };
       }
-      return { canceled: true }
+      return { canceled: true };
     } catch (error: any) {
-      return { success: false, error: error.message }
+      return { success: false, error: error.message };
     }
-  })
+  });
 }
-

@@ -1,110 +1,113 @@
-import { useAuthStore } from '@renderer/store/auth-store'
-import axios, { AxiosError, AxiosRequestConfig } from 'axios'
+import { useAuthStore } from "@renderer/store/auth-store";
+import axios, { AxiosError, AxiosRequestConfig } from "axios";
 
 interface CustomAxiosRequestConfig extends AxiosRequestConfig {
-  _retry?: boolean
+  _retry?: boolean;
 }
 type QueueItem = {
-  resolve: (token: string) => void
-  reject: (err: any) => void
-}
+  resolve: (token: string) => void;
+  reject: (err: any) => void;
+};
 
 const AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_BACKEND_KEY
-})
+  baseURL: import.meta.env.VITE_BACKEND_KEY,
+});
 
 AxiosInstance.interceptors.request.use((config) => {
-  const accessToken = useAuthStore.getState().accessToken
+  const accessToken = useAuthStore.getState().accessToken;
 
   if (accessToken) {
-    config.headers = config.headers || {}
-    config.headers.Authorization = `Bearer ${accessToken}`
+    config.headers = config.headers || {};
+    config.headers.Authorization = `Bearer ${accessToken}`;
   }
 
-  return config
-})
+  return config;
+});
 
-let isRefreshing = false
-let queue: QueueItem[] = []
+let isRefreshing = false;
+let queue: QueueItem[] = [];
 
 const processQueue = (error: any, token: string | null = null) => {
   queue.forEach((prom) => {
     if (error || !token) {
-      prom.reject(error)
+      prom.reject(error);
     } else {
-      prom.resolve(token)
+      prom.resolve(token);
     }
-  })
-  queue = []
-}
+  });
+  queue = [];
+};
 
 AxiosInstance.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
-    const originalRequest = error.config as CustomAxiosRequestConfig
+    const originalRequest = error.config as CustomAxiosRequestConfig;
 
     if (
       error.response?.status === 401 &&
       !originalRequest?._retry &&
-      !originalRequest?.url?.includes('/refresh-token') &&
-      !originalRequest?.url?.includes('/users/login')
+      !originalRequest?.url?.includes("/refresh-token") &&
+      !originalRequest?.url?.includes("/users/login")
     ) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           queue.push({
             resolve: (token: string) => {
-              originalRequest.headers = originalRequest.headers || {}
-              originalRequest.headers.Authorization = `Bearer ${token}`
-              resolve(AxiosInstance(originalRequest))
+              originalRequest.headers = originalRequest.headers || {};
+              originalRequest.headers.Authorization = `Bearer ${token}`;
+              resolve(AxiosInstance(originalRequest));
             },
-            reject: (err: any) => reject(err)
-          })
-        })
+            reject: (err: any) => reject(err),
+          });
+        });
       }
 
-      originalRequest._retry = true
-      isRefreshing = true
+      originalRequest._retry = true;
+      isRefreshing = true;
 
       try {
-        const currentRefreshToken = localStorage.getItem('jarvis_cloud_token')
+        const currentRefreshToken = localStorage.getItem("jarvis_cloud_token");
 
         if (!currentRefreshToken) {
-          throw new Error('No refresh token found in local storage.')
+          throw new Error("No refresh token found in local storage.");
         }
 
-        const res = await axios.post(`${import.meta.env.VITE_BACKEND_KEY}/users/refresh-token`, {
-          refreshToken: currentRefreshToken
-        })
+        const res = await axios.post(
+          `${import.meta.env.VITE_BACKEND_KEY}/users/refresh-token`,
+          {
+            refreshToken: currentRefreshToken,
+          },
+        );
 
-        const newAccessToken = res.data.accessToken
+        const newAccessToken = res.data.accessToken;
 
         if (res.data.refreshToken) {
-          localStorage.setItem('jarvis_cloud_token', res.data.refreshToken)
+          localStorage.setItem("jarvis_cloud_token", res.data.refreshToken);
         }
 
-        useAuthStore.getState().setAccessToken(newAccessToken)
+        useAuthStore.getState().setAccessToken(newAccessToken);
 
-        processQueue(null, newAccessToken)
+        processQueue(null, newAccessToken);
 
-        originalRequest.headers = originalRequest.headers || {}
-        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`
+        originalRequest.headers = originalRequest.headers || {};
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
 
-        return AxiosInstance(originalRequest)
+        return AxiosInstance(originalRequest);
       } catch (err) {
-        processQueue(err, null)
+        processQueue(err, null);
 
-        useAuthStore.getState().logout()
-        localStorage.removeItem('jarvis_cloud_token')
-        window.location.hash = '#/login'
+        useAuthStore.getState().logout();
+        localStorage.removeItem("jarvis_cloud_token");
+        window.location.hash = "#/login";
 
-        return Promise.reject(err)
+        return Promise.reject(err);
       } finally {
-        isRefreshing = false
+        isRefreshing = false;
       }
     }
 
-    return Promise.reject(error)
-  }
-)
+    return Promise.reject(error);
+  },
+);
 
-export default AxiosInstance
+export default AxiosInstance;

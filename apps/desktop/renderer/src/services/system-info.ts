@@ -1,43 +1,43 @@
 export interface SystemStats {
-  cpu: string
+  cpu: string;
   memory: {
-    total: string
-    free: string
-    usedPercentage: string
-  }
-  temperature: number
+    total: string;
+    free: string;
+    usedPercentage: string;
+  };
+  temperature: number;
   os: {
-    type: string
-    uptime: string
-  }
+    type: string;
+    uptime: string;
+  };
 }
 
 export interface AppItem {
-  name: string
-  id: string
+  name: string;
+  id: string;
 }
 
 export const getSystemStatus = async (): Promise<SystemStats | null> => {
   try {
-    return await window.electron.ipcRenderer.invoke('get-system-stats')
+    return await window.electron.ipcRenderer.invoke("get-system-stats");
   } catch (error) {
-    return null
+    return null;
   }
-}
+};
 
 export const getAllApps = async (): Promise<AppItem[]> => {
   try {
-    const apps = await window.electron.ipcRenderer.invoke('get-installed-apps')
-    return Array.isArray(apps) ? apps : []
+    const apps = await window.electron.ipcRenderer.invoke("get-installed-apps");
+    return Array.isArray(apps) ? apps : [];
   } catch (error) {
-    return []
+    return [];
   }
-}
+};
 
 export const getDrives = async (): Promise<any[]> => {
   try {
-    return await window.electron.ipcRenderer.invoke('get-drives')
+    return await window.electron.ipcRenderer.invoke("get-drives");
   } catch (error) {
-    return []
+    return [];
   }
-}
+};

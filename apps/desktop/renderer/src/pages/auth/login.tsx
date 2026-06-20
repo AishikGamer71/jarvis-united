@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { useNavigate } from 'react-router-dom'
-import { useAuthStore } from '../../store/auth-store'
+import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { useAuthStore } from "../../store/auth-store";
 import {
   Cpu,
   ShieldCheck,
@@ -10,92 +10,100 @@ import {
   Fingerprint,
   Activity,
   Database,
-  Lock
-} from 'lucide-react'
-import { FcGoogle } from 'react-icons/fc'
+  Lock,
+} from "lucide-react";
+import { FcGoogle } from "react-icons/fc";
 
 export default function LoginPage() {
-  const [bootLogs, setBootLogs] = useState<string[]>([])
-  const [isReady, setIsReady] = useState(false)
-  const navigate = useNavigate()
-  const setAccessToken = useAuthStore((s) => s.setAccessToken)
-  const logsEndRef = useRef<HTMLDivElement>(null)
+  const [bootLogs, setBootLogs] = useState<string[]>([]);
+  const [isReady, setIsReady] = useState(false);
+  const navigate = useNavigate();
+  const setAccessToken = useAuthStore((s) => s.setAccessToken);
+  const logsEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (logsEndRef.current) {
-      logsEndRef.current.scrollIntoView({ behavior: 'smooth' })
+      logsEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [bootLogs])
+  }, [bootLogs]);
 
   const handleGoogleLogin = () => {
-    localStorage.setItem('jarvis_cloud_token', 'dev_mode_token')
-    setAccessToken('dev_mode_token')
-    navigate('/')
-  }
+    localStorage.setItem("jarvis_cloud_token", "dev_mode_token");
+    setAccessToken("dev_mode_token");
+    navigate("/");
+  };
 
   useEffect(() => {
     const sequence = [
-      'SYS_BOOT: INITIATING KERNEL...',
-      'MEM_CHECK: 64GB DDR5 [PASSED]',
-      'CPU_ALLOC: THREADS 0-31 [LOCKED]',
-      'GPU_COMPUTE: NVIDIA TENSOR CORES [ACTIVE]',
-      'SECURE_ENCLAVE: MOUNTED',
-      'CRYPTO_MOD: SHA-256 HASH [VERIFIED]',
-      'NEURAL_LINK: ESTABLISHING...',
-      'LLM_CORE: LOADING WEIGHTS...',
-      'LLM_CORE: [OK] 12ms',
-      'IPC_BRIDGE: [OK]',
-      'SYS_BUS: IPC PIPES OPEN',
-      'NET_MON: SCANNING PORTS...',
-      'NET_MON: 0 ANOMALIES DETECTED',
-      'LOCAL_VAULT: WAITING FOR DECRYPTION',
-      'SYS_DAEMON: BACKGROUND SERVICES [RUNNING]',
-      'TELEMETRY_LINK: [BYPASSED]',
-      'AGENTIC_ROUTER: ONLINE',
-      'WORKFLOW_ENGINE: STANDBY',
-      'AWAITING OPERATOR HANDSHAKE...'
-    ]
+      "SYS_BOOT: INITIATING KERNEL...",
+      "MEM_CHECK: 64GB DDR5 [PASSED]",
+      "CPU_ALLOC: THREADS 0-31 [LOCKED]",
+      "GPU_COMPUTE: NVIDIA TENSOR CORES [ACTIVE]",
+      "SECURE_ENCLAVE: MOUNTED",
+      "CRYPTO_MOD: SHA-256 HASH [VERIFIED]",
+      "NEURAL_LINK: ESTABLISHING...",
+      "LLM_CORE: LOADING WEIGHTS...",
+      "LLM_CORE: [OK] 12ms",
+      "IPC_BRIDGE: [OK]",
+      "SYS_BUS: IPC PIPES OPEN",
+      "NET_MON: SCANNING PORTS...",
+      "NET_MON: 0 ANOMALIES DETECTED",
+      "LOCAL_VAULT: WAITING FOR DECRYPTION",
+      "SYS_DAEMON: BACKGROUND SERVICES [RUNNING]",
+      "TELEMETRY_LINK: [BYPASSED]",
+      "AGENTIC_ROUTER: ONLINE",
+      "WORKFLOW_ENGINE: STANDBY",
+      "AWAITING OPERATOR HANDSHAKE...",
+    ];
 
-    let currentStep = 0
+    let currentStep = 0;
     const interval = setInterval(() => {
       if (currentStep < sequence.length) {
-        setBootLogs((prev) => [...prev, sequence[currentStep]])
-        currentStep++
+        setBootLogs((prev) => [...prev, sequence[currentStep]]);
+        currentStep++;
       } else {
-        setIsReady(true)
-        clearInterval(interval)
+        setIsReady(true);
+        clearInterval(interval);
       }
-    }, 180)
+    }, 180);
 
-    return () => clearInterval(interval)
-  }, [])
+    return () => clearInterval(interval);
+  }, []);
 
   const containerVariants = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
-      transition: { staggerChildren: 0.1, delayChildren: 0.1 }
-    }
-  }
+      transition: { staggerChildren: 0.1, delayChildren: 0.1 },
+    },
+  };
 
   const cardVariants: any = {
     hidden: { opacity: 0, scale: 0.95 },
     show: {
       opacity: 1,
       scale: 1,
-      transition: { type: 'spring', stiffness: 300, damping: 25 }
-    }
-  }
+      transition: { type: "spring", stiffness: 300, damping: 25 },
+    },
+  };
 
   const panelVariants: any = {
     hidden: { opacity: 0, x: -20 },
-    show: { opacity: 1, x: 0, transition: { type: 'spring', stiffness: 200, damping: 20 } }
-  }
+    show: {
+      opacity: 1,
+      x: 0,
+      transition: { type: "spring", stiffness: 200, damping: 20 },
+    },
+  };
 
   const rightPanelVariants: any = {
     hidden: { opacity: 0, x: 20 },
-    show: { opacity: 1, x: 0, transition: { type: 'spring', stiffness: 200, damping: 20 } }
-  }
+    show: {
+      opacity: 1,
+      x: 0,
+      transition: { type: "spring", stiffness: 200, damping: 20 },
+    },
+  };
 
   return (
     <div className="min-h-screen bg-[#050505] text-emerald-50 font-sans flex items-center justify-center p-4 lg:p-8 relative overflow-hidden selection:bg-emerald-500/30 selection:text-emerald-100">
@@ -127,9 +135,10 @@ export default function LoginPage() {
                   key={index}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className={`mb-2 ${index === bootLogs.length - 1 ? 'text-emerald-400 font-bold drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]' : 'text-zinc-500'}`}
+                  className={`mb-2 ${index === bootLogs.length - 1 ? "text-emerald-400 font-bold drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" : "text-zinc-500"}`}
                 >
-                  <span className="opacity-50 mr-2 text-emerald-700">{`>`}</span> {log}
+                  <span className="opacity-50 mr-2 text-emerald-700">{`>`}</span>{" "}
+                  {log}
                 </motion.div>
               ))}
             </AnimatePresence>
@@ -154,8 +163,8 @@ export default function LoginPage() {
             <div className="relative inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-black border border-emerald-500/30 shadow-[0_0_40px_rgba(16,185,129,0.15)] mb-6 overflow-hidden">
               <motion.div
                 className="absolute left-0 w-full h-0.5 bg-emerald-400 shadow-[0_0_15px_#34d399]"
-                animate={{ top: ['-10%', '110%', '-10%'] }}
-                transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+                animate={{ top: ["-10%", "110%", "-10%"] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
               />
               <Cpu className="w-10 h-10 text-emerald-400 relative z-10" />
             </div>
@@ -174,8 +183,8 @@ export default function LoginPage() {
             <div className="mb-8 p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20 flex items-start gap-4">
               <ShieldCheck className="w-6 h-6 text-emerald-400 shrink-0 mt-0.5" />
               <p className="text-xs text-zinc-300 font-mono leading-relaxed">
-                OAuth handshake is processed externally to ensure local vault integrity. The system
-                will bridge upon verification.
+                OAuth handshake is processed externally to ensure local vault
+                integrity. The system will bridge upon verification.
               </p>
             </div>
 
@@ -185,7 +194,7 @@ export default function LoginPage() {
               <button
                 onClick={handleGoogleLogin}
                 disabled={!isReady}
-                className={`relative flex w-full items-center justify-center gap-3 py-4 px-6 rounded-xl bg-black border border-white/40 text-white transition-all duration-200 ease-in-out font-bold text-xs tracking-widest uppercase shadow-lg ${!isReady ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white hover:text-black hover:border-emerald-500/90 cursor-pointer'}`}
+                className={`relative flex w-full items-center justify-center gap-3 py-4 px-6 rounded-xl bg-black border border-white/40 text-white transition-all duration-200 ease-in-out font-bold text-xs tracking-widest uppercase shadow-lg ${!isReady ? "opacity-50 cursor-not-allowed" : "hover:bg-white hover:text-black hover:border-emerald-500/90 cursor-pointer"}`}
               >
                 <FcGoogle className="w-5 h-5" />
                 PROCEED
@@ -216,13 +225,15 @@ export default function LoginPage() {
                 <span className="flex items-center gap-2">
                   <Network size={12} /> NETWORK
                 </span>
-                <span className={isReady ? 'text-emerald-400' : 'text-yellow-500'}>
-                  {isReady ? 'SECURE' : 'WAITING'}
+                <span
+                  className={isReady ? "text-emerald-400" : "text-yellow-500"}
+                >
+                  {isReady ? "SECURE" : "WAITING"}
                 </span>
               </div>
               <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
                 <div
-                  className={`h-full transition-all duration-1000 ${isReady ? 'w-full bg-emerald-500' : 'w-1/3 bg-yellow-500 animate-pulse'}`}
+                  className={`h-full transition-all duration-1000 ${isReady ? "w-full bg-emerald-500" : "w-1/3 bg-yellow-500 animate-pulse"}`}
                 />
               </div>
             </div>
@@ -254,12 +265,12 @@ export default function LoginPage() {
 
           <div className="mt-auto p-4 bg-emerald-900/10 border border-emerald-500/20 rounded-xl">
             <p className="text-[9px] text-emerald-400/80 tracking-widest uppercase leading-relaxed">
-              JARVIS OS Operates strictly within local environments. External pings are limited to
-              authorized LLM endpoints.
+              JARVIS OS Operates strictly within local environments. External
+              pings are limited to authorized LLM endpoints.
             </p>
           </div>
         </motion.div>
       </motion.div>
     </div>
-  )
+  );
 }

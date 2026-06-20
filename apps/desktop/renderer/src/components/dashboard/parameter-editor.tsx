@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   RiCloseLine,
   RiSave3Line,
@@ -9,42 +9,53 @@ import {
   RiCodeLine,
   RiSpotifyLine,
   RiDiscordLine,
-  RiGamepadLine
-} from 'react-icons/ri'
-import { getAllApps, AppItem } from '@renderer/services/system-info'
+  RiGamepadLine,
+} from "react-icons/ri";
+import { getAllApps, AppItem } from "@renderer/services/system-info";
 
 const SmartIcon = ({ name, size = 16 }: { name: string; size?: number }) => {
-  if (!name) return <div className={`w-8 h-8 bg-zinc-800 rounded-md border border-white/5`} />
+  if (!name)
+    return (
+      <div className={`w-8 h-8 bg-zinc-800 rounded-md border border-white/5`} />
+    );
 
-  const lower = name.toLowerCase()
-  let icon = <RiTerminalBoxLine size={size} />
-  let color = 'text-zinc-400'
-  let bg = 'bg-zinc-800'
+  const lower = name.toLowerCase();
+  let icon = <RiTerminalBoxLine size={size} />;
+  let color = "text-zinc-400";
+  let bg = "bg-zinc-800";
 
-  if (lower.includes('chrome') || lower.includes('edge') || lower.includes('brave')) {
-    icon = <RiChromeLine size={size} />
-    color = 'text-blue-400'
-    bg = 'bg-blue-500/10'
-  } else if (lower.includes('code') || lower.includes('dev')) {
-    icon = <RiCodeLine size={size} />
-    color = 'text-cyan-400'
-    bg = 'bg-cyan-500/10'
-  } else if (lower.includes('spotify') || lower.includes('music')) {
-    icon = <RiSpotifyLine size={size} />
-    color = 'text-green-400'
-    bg = 'bg-green-500/10'
-  } else if (
-    lower.includes('discord') ||
-    lower.includes('telegram') ||
-    lower.includes('whatsapp')
+  if (
+    lower.includes("chrome") ||
+    lower.includes("edge") ||
+    lower.includes("brave")
   ) {
-    icon = <RiDiscordLine size={size} />
-    color = 'text-indigo-400'
-    bg = 'bg-indigo-500/10'
-  } else if (lower.includes('game') || lower.includes('launcher') || lower.includes('epic')) {
-    icon = <RiGamepadLine size={size} />
-    color = 'text-purple-400'
-    bg = 'bg-purple-500/10'
+    icon = <RiChromeLine size={size} />;
+    color = "text-blue-400";
+    bg = "bg-blue-500/10";
+  } else if (lower.includes("code") || lower.includes("dev")) {
+    icon = <RiCodeLine size={size} />;
+    color = "text-cyan-400";
+    bg = "bg-cyan-500/10";
+  } else if (lower.includes("spotify") || lower.includes("music")) {
+    icon = <RiSpotifyLine size={size} />;
+    color = "text-green-400";
+    bg = "bg-green-500/10";
+  } else if (
+    lower.includes("discord") ||
+    lower.includes("telegram") ||
+    lower.includes("whatsapp")
+  ) {
+    icon = <RiDiscordLine size={size} />;
+    color = "text-indigo-400";
+    bg = "bg-indigo-500/10";
+  } else if (
+    lower.includes("game") ||
+    lower.includes("launcher") ||
+    lower.includes("epic")
+  ) {
+    icon = <RiGamepadLine size={size} />;
+    color = "text-purple-400";
+    bg = "bg-purple-500/10";
   }
 
   return (
@@ -53,61 +64,70 @@ const SmartIcon = ({ name, size = 16 }: { name: string; size?: number }) => {
     >
       {icon}
     </div>
-  )
-}
+  );
+};
 
-const AppSelector = ({ value, onChange }: { value: string; onChange: (val: string) => void }) => {
-  const [allApps, setAllApps] = useState<AppItem[]>([])
-  const [searchTerm, setSearchTerm] = useState('')
-  const [debouncedTerm, setDebouncedTerm] = useState('')
-  const [page, setPage] = useState(1)
-  const [loading, setLoading] = useState(true)
+const AppSelector = ({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+}) => {
+  const [allApps, setAllApps] = useState<AppItem[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedTerm, setDebouncedTerm] = useState("");
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     getAllApps().then((raw) => {
       const cleanData = (Array.isArray(raw) ? raw : []).filter(
-        (item) => item && typeof item === 'object' && item.name
-      )
-      setAllApps(cleanData)
-      setLoading(false)
-    })
-  }, [])
+        (item) => item && typeof item === "object" && item.name,
+      );
+      setAllApps(cleanData);
+      setLoading(false);
+    });
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedTerm(searchTerm)
-      setPage(1) 
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [searchTerm])
+      setDebouncedTerm(searchTerm);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   const filteredApps = allApps.filter((app) =>
-    app.name.toLowerCase().includes(debouncedTerm.toLowerCase())
-  )
+    app.name.toLowerCase().includes(debouncedTerm.toLowerCase()),
+  );
 
   const sortedApps = [...filteredApps].sort((a, b) => {
-    if (a.name === value) return -1
-    if (b.name === value) return 1
-    return 0
-  })
+    if (a.name === value) return -1;
+    if (b.name === value) return 1;
+    return 0;
+  });
 
-  const visibleApps = sortedApps.slice(0, page * 15)
+  const visibleApps = sortedApps.slice(0, page * 15);
 
-  const observer = useRef<IntersectionObserver | null>(null)
+  const observer = useRef<IntersectionObserver | null>(null);
   const lastElementRef = useCallback(
     (node: HTMLDivElement) => {
-      if (loading) return
-      if (observer.current) observer.current.disconnect()
+      if (loading) return;
+      if (observer.current) observer.current.disconnect();
 
       observer.current = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting && visibleApps.length < sortedApps.length) {
-          setPage((prev) => prev + 1)
+        if (
+          entries[0].isIntersecting &&
+          visibleApps.length < sortedApps.length
+        ) {
+          setPage((prev) => prev + 1);
         }
-      })
-      if (node) observer.current.observe(node)
+      });
+      if (node) observer.current.observe(node);
     },
-    [loading, visibleApps.length, sortedApps.length]
-  )
+    [loading, visibleApps.length, sortedApps.length],
+  );
 
   return (
     <div className="flex flex-col gap-2 relative w-full">
@@ -126,28 +146,34 @@ const AppSelector = ({ value, onChange }: { value: string; onChange: (val: strin
       </div>
 
       <div className="flex flex-col gap-1.5 h-120 overflow-y-auto scrollbar-small bg-[#09090b] border border-[#27272a] rounded-md p-1.5 w-full shadow-inner">
-        {loading && <p className="text-[10px] text-zinc-500 p-2 text-center">Indexing System...</p>}
+        {loading && (
+          <p className="text-[10px] text-zinc-500 p-2 text-center">
+            Indexing System...
+          </p>
+        )}
         {!loading && visibleApps.length === 0 && (
-          <p className="text-[10px] text-zinc-500 p-2 text-center">No apps found.</p>
+          <p className="text-[10px] text-zinc-500 p-2 text-center">
+            No apps found.
+          </p>
         )}
 
         {visibleApps.map((app, index) => {
-          const isSelected = value === app.name
-          const isLast = visibleApps.length === index + 1
+          const isSelected = value === app.name;
+          const isLast = visibleApps.length === index + 1;
 
           const AppRow = (
             <div
               onClick={() => onChange(app.name)}
-              className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all duration-300 transform active:scale-95 group ${isSelected ? 'bg-emerald-500/15 border border-emerald-500/60 shadow-[0_0_15px_rgba(16,185,129,0.15)] order-first' : 'hover:bg-[#18181b] border border-transparent hover:border-white/5'}`}
+              className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all duration-300 transform active:scale-95 group ${isSelected ? "bg-emerald-500/15 border border-emerald-500/60 shadow-[0_0_15px_rgba(16,185,129,0.15)] order-first" : "hover:bg-[#18181b] border border-transparent hover:border-white/5"}`}
             >
               <div className="flex items-center gap-3 overflow-hidden">
                 <div
-                  className={`transition-transform duration-300 ${isSelected ? 'scale-110' : 'group-hover:scale-105'}`}
+                  className={`transition-transform duration-300 ${isSelected ? "scale-110" : "group-hover:scale-105"}`}
                 >
                   <SmartIcon name={app.name} />
                 </div>
                 <span
-                  className={`text-xs font-bold truncate ${isSelected ? 'text-emerald-400' : 'text-zinc-300'}`}
+                  className={`text-xs font-bold truncate ${isSelected ? "text-emerald-400" : "text-zinc-300"}`}
                 >
                   {app.name}
                 </span>
@@ -159,43 +185,47 @@ const AppSelector = ({ value, onChange }: { value: string; onChange: (val: strin
                 />
               )}
             </div>
-          )
+          );
 
           if (isLast)
             return (
               <div ref={lastElementRef} key={`${app.id}-${index}`}>
                 {AppRow}
               </div>
-            )
-          return <div key={`${app.id}-${index}`}>{AppRow}</div>
+            );
+          return <div key={`${app.id}-${index}`}>{AppRow}</div>;
         })}
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default function ParameterEditorDrawer({ nodeData, updateNodeInputs, closeEditor }: any) {
-  const tool = nodeData?.data?.tool
-  const [localInputs, setLocalInputs] = useState<any>({})
-  const [localComment, setLocalComment] = useState('')
+export default function ParameterEditorDrawer({
+  nodeData,
+  updateNodeInputs,
+  closeEditor,
+}: any) {
+  const tool = nodeData?.data?.tool;
+  const [localInputs, setLocalInputs] = useState<any>({});
+  const [localComment, setLocalComment] = useState("");
 
   useEffect(() => {
     if (nodeData) {
-      setLocalInputs(nodeData.data.inputs || {})
-      setLocalComment(nodeData.data.comment || '')
+      setLocalInputs(nodeData.data.inputs || {});
+      setLocalComment(nodeData.data.comment || "");
     }
-  }, [nodeData])
+  }, [nodeData]);
 
-  if (!nodeData || !tool) return null
+  if (!nodeData || !tool) return null;
 
   const handleInputChange = (key: string, value: string) => {
-    setLocalInputs((prev: any) => ({ ...prev, [key]: value }))
-  }
+    setLocalInputs((prev: any) => ({ ...prev, [key]: value }));
+  };
 
   const handleSave = () => {
-    updateNodeInputs(nodeData.id, localInputs, localComment)
-    closeEditor()
-  }
+    updateNodeInputs(nodeData.id, localInputs, localComment);
+    closeEditor();
+  };
 
   return (
     <div className="absolute top-0 right-0 w-80 h-full bg-[#111113] border-l border-[#27272a] shadow-2xl flex flex-col z-50 animate-in slide-in-from-right-8 duration-200">
@@ -214,9 +244,11 @@ export default function ParameterEditorDrawer({ nodeData, updateNodeInputs, clos
       <div className="p-5 grow overflow-y-auto flex flex-col gap-6 custom-scrollbar scrollbar-small">
         <div>
           <h3 className="text-sm font-black text-white uppercase tracking-widest mb-1 flex items-center gap-2">
-            {tool.name.replace(/_/g, ' ')}
+            {tool.name.replace(/_/g, " ")}
           </h3>
-          <p className="text-[10px] text-zinc-500 leading-relaxed font-mono">{tool.description}</p>
+          <p className="text-[10px] text-zinc-500 leading-relaxed font-mono">
+            {tool.description}
+          </p>
         </div>
 
         <div className="flex flex-col gap-2">
@@ -239,42 +271,46 @@ export default function ParameterEditorDrawer({ nodeData, updateNodeInputs, clos
             Parameters
           </h4>
 
-          {tool.parameters?.properties && Object.keys(tool.parameters.properties).length > 0 ? (
-            Object.entries(tool.parameters.properties).map(([key, prop]: any) => (
-              <div key={key} className="flex flex-col gap-2 w-full">
-                <label className="text-[10px] text-zinc-400 uppercase tracking-widest">
-                  {key.replace(/_/g, ' ')}
-                </label>
+          {tool.parameters?.properties &&
+          Object.keys(tool.parameters.properties).length > 0 ? (
+            Object.entries(tool.parameters.properties).map(
+              ([key, prop]: any) => (
+                <div key={key} className="flex flex-col gap-2 w-full">
+                  <label className="text-[10px] text-zinc-400 uppercase tracking-widest">
+                    {key.replace(/_/g, " ")}
+                  </label>
 
-                {key === 'app_name' && (tool.name === 'open_app' || tool.name === 'close_app') ? (
-                  <AppSelector
-                    value={localInputs[key] || ''}
-                    onChange={(val) => handleInputChange(key, val)}
-                  />
-                ) : prop.enum ? (
-                  <select
-                    className="bg-[#09090b] border border-[#27272a] rounded-md text-xs p-2.5 text-white outline-none focus:border-emerald-500 transition-colors cursor-pointer w-full"
-                    value={localInputs[key] || ''}
-                    onChange={(e) => handleInputChange(key, e.target.value)}
-                  >
-                    <option value="">Select option...</option>
-                    {prop.enum.map((opt: string) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    type={prop.type === 'NUMBER' ? 'number' : 'text'}
-                    placeholder={prop.description || ''}
-                    className="bg-[#09090b] border border-[#27272a] rounded-md text-xs p-2.5 text-white outline-none focus:border-emerald-500 transition-colors placeholder-zinc-700 font-mono shadow-inner w-full"
-                    value={localInputs[key] || ''}
-                    onChange={(e) => handleInputChange(key, e.target.value)}
-                  />
-                )}
-              </div>
-            ))
+                  {key === "app_name" &&
+                  (tool.name === "open_app" || tool.name === "close_app") ? (
+                    <AppSelector
+                      value={localInputs[key] || ""}
+                      onChange={(val) => handleInputChange(key, val)}
+                    />
+                  ) : prop.enum ? (
+                    <select
+                      className="bg-[#09090b] border border-[#27272a] rounded-md text-xs p-2.5 text-white outline-none focus:border-emerald-500 transition-colors cursor-pointer w-full"
+                      value={localInputs[key] || ""}
+                      onChange={(e) => handleInputChange(key, e.target.value)}
+                    >
+                      <option value="">Select option...</option>
+                      {prop.enum.map((opt: string) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type={prop.type === "NUMBER" ? "number" : "text"}
+                      placeholder={prop.description || ""}
+                      className="bg-[#09090b] border border-[#27272a] rounded-md text-xs p-2.5 text-white outline-none focus:border-emerald-500 transition-colors placeholder-zinc-700 font-mono shadow-inner w-full"
+                      value={localInputs[key] || ""}
+                      onChange={(e) => handleInputChange(key, e.target.value)}
+                    />
+                  )}
+                </div>
+              ),
+            )
           ) : (
             <p className="text-[10px] text-zinc-600 italic uppercase tracking-widest bg-black/30 p-2 rounded text-center border border-white/5">
               No configuration needed.
@@ -292,5 +328,5 @@ export default function ParameterEditorDrawer({ nodeData, updateNodeInputs, clos
         </button>
       </div>
     </div>
-  )
+  );
 }

@@ -1,28 +1,35 @@
-import './assets/main.css'
+import "./assets/main.css";
 
-import React, { JSX, StrictMode, useEffect, useState } from 'react'
-import { createRoot } from 'react-dom/client'
-import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
+import React, { JSX, StrictMode, useEffect, useState } from "react";
+import { createRoot } from "react-dom/client";
+import {
+  HashRouter,
+  Routes,
+  Route,
+  Navigate,
+  useNavigate,
+  useLocation,
+} from "react-router-dom";
 
-import LockScreen from './layouts/lock-screen'
-import LoginPage from './pages/auth/login'
-import { useAuthStore } from './store/auth-store'
-import AxiosInstance from './config/axios-instance'
-import AuthInitializer from './pages/auth/auth-token'
-import IndexRoot from './IndexRoot'
+import LockScreen from "./layouts/lock-screen";
+import LoginPage from "./pages/auth/login";
+import { useAuthStore } from "./store/auth-store";
+import AxiosInstance from "./config/axios-instance";
+import AuthInitializer from "./pages/auth/auth-token";
+import IndexRoot from "./IndexRoot";
 
-const electronAPI = (window as any).electron?.ipcRenderer
+const electronAPI = (window as any).electron?.ipcRenderer;
 
 class SystemErrorBoundary extends React.Component<
   { children: React.ReactNode },
   { hasError: boolean; errorMsg: string }
 > {
   constructor(props: any) {
-    super(props)
-    this.state = { hasError: false, errorMsg: '' }
+    super(props);
+    this.state = { hasError: false, errorMsg: "" };
   }
   static getDerivedStateFromError(error: any) {
-    return { hasError: true, errorMsg: error.message }
+    return { hasError: true, errorMsg: error.message };
   }
   render() {
     if (this.state.hasError) {
@@ -33,97 +40,98 @@ class SystemErrorBoundary extends React.Component<
             {this.state.errorMsg}
           </div>
         </div>
-      )
+      );
     }
-    return this.props.children
+    return this.props.children;
   }
 }
 
-let isSessionUnlocked = false
+let isSessionUnlocked = false;
 
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
-  const [status, setStatus] = useState<'checking' | 'authorized'>('checking')
-  const navigate = useNavigate()
-  const location = useLocation()
+  const [status, setStatus] = useState<"checking" | "authorized">("checking");
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const accessToken = useAuthStore((state) => state.accessToken)
-  const logout = useAuthStore((state) => state.logout)
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const logout = useAuthStore((state) => state.logout);
 
   useEffect(() => {
     const verifyAccess = async () => {
       try {
-        if (!accessToken && !localStorage.getItem('jarvis_cloud_token')) {
-          navigate('/login', { replace: true })
-          return
+        if (!accessToken && !localStorage.getItem("jarvis_cloud_token")) {
+          navigate("/login", { replace: true });
+          return;
         }
 
-        if (localStorage.getItem('jarvis_cloud_token') === 'dev_mode_token' || accessToken === 'dev_mode_token') {
-          isSessionUnlocked = true
-          setStatus('authorized')
-          return
+        if (
+          localStorage.getItem("jarvis_cloud_token") === "dev_mode_token" ||
+          accessToken === "dev_mode_token"
+        ) {
+          isSessionUnlocked = true;
+          setStatus("authorized");
+          return;
         }
 
-        const userRes = await AxiosInstance.get('/users/me')
-        if (userRes.status !== 200) throw new Error('Cloud Auth Failed')
-          
+        const userRes = await AxiosInstance.get("/users/me");
+        if (userRes.status !== 200) throw new Error("Cloud Auth Failed");
 
-
-        if (!isSessionUnlocked && location.pathname !== '/lock') {
-          navigate('/lock', { replace: true })
-          return
+        if (!isSessionUnlocked && location.pathname !== "/lock") {
+          navigate("/lock", { replace: true });
+          return;
         }
 
-        setStatus('authorized')
+        setStatus("authorized");
       } catch (error) {
-        logout()
-        navigate('/login', { replace: true })
+        logout();
+        navigate("/login", { replace: true });
       }
-    }
+    };
 
-    verifyAccess()
-  }, [navigate, location.pathname, accessToken, logout])
+    verifyAccess();
+  }, [navigate, location.pathname, accessToken, logout]);
 
-  if (status === 'checking') {
+  if (status === "checking") {
     return (
       <div className="h-screen w-screen bg-[#050505] flex items-center justify-center text-[#10b981] font-mono text-sm tracking-widest uppercase">
         Verifying Security Clearance...
       </div>
-    )
+    );
   }
 
-  return children
-}
+  return children;
+};
 
 const PublicRoute = ({ children }: { children: JSX.Element }) => {
   const accessToken =
-    useAuthStore((state) => state.accessToken) || localStorage.getItem('jarvis_cloud_token')
-  return accessToken ? <Navigate to="/" replace /> : children
-}
+    useAuthStore((state) => state.accessToken) ||
+    localStorage.getItem("jarvis_cloud_token");
+  return accessToken ? <Navigate to="/" replace /> : children;
+};
 
 const AppRouter = () => {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (electronAPI) {
-      electronAPI.on('oauth-callback', (_event: any, url: string) => {
+      electronAPI.on("oauth-callback", (_event: any, url: string) => {
         try {
-          const urlObj = new URL(url.replace('jarvis://', 'http://localhost/'))
+          const urlObj = new URL(url.replace("jarvis://", "http://localhost/"));
 
-          const refreshToken = urlObj.searchParams.get('refreshToken')
-          const accessToken = urlObj.searchParams.get('accessToken')
+          const refreshToken = urlObj.searchParams.get("refreshToken");
+          const accessToken = urlObj.searchParams.get("accessToken");
 
           if (refreshToken && accessToken) {
-            localStorage.setItem('jarvis_cloud_token', refreshToken)
-            useAuthStore.getState().setAccessToken(accessToken)
+            localStorage.setItem("jarvis_cloud_token", refreshToken);
+            useAuthStore.getState().setAccessToken(accessToken);
 
-            navigate('/')
+            navigate("/");
           }
-        } catch (e) {
-        }
-      })
+        } catch (e) {}
+      });
     }
-    return () => electronAPI?.removeAllListeners('oauth-callback')
-  }, [navigate])
+    return () => electronAPI?.removeAllListeners("oauth-callback");
+  }, [navigate]);
 
   return (
     <Routes>
@@ -136,15 +144,14 @@ const AppRouter = () => {
         }
       />
 
-
       <Route
         path="/lock"
         element={
           <ProtectedRoute>
             <LockScreen
               onUnlock={() => {
-                isSessionUnlocked = true
-                navigate('/')
+                isSessionUnlocked = true;
+                navigate("/");
               }}
             />
           </ProtectedRoute>
@@ -162,10 +169,10 @@ const AppRouter = () => {
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
-  )
-}
+  );
+};
 
-createRoot(document.getElementById('root')!).render(
+createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <SystemErrorBoundary>
       <HashRouter>
@@ -173,5 +180,5 @@ createRoot(document.getElementById('root')!).render(
         <AppRouter />
       </HashRouter>
     </SystemErrorBoundary>
-  </StrictMode>
-)
+  </StrictMode>,
+);

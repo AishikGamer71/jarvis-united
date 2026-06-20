@@ -1,10 +1,10 @@
-import { useEffect, useCallback, useRef, useState } from 'react'
-import { motion } from 'framer-motion'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
-import Sphere from '@renderer/components/dashboard/sphere'
-import { jarvisService } from '@renderer/services/jarvis-voice-ai'
-import { clearHistory, saveMessage } from '@renderer/services/jarvis-ai-brain'
+import { useEffect, useCallback, useRef, useState } from "react";
+import { motion } from "framer-motion";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import Sphere from "@renderer/components/dashboard/sphere";
+import { jarvisService } from "@renderer/services/jarvis-voice-ai";
+import { clearHistory, saveMessage } from "@renderer/services/jarvis-ai-brain";
 import {
   RiCpuLine,
   RiCameraLine,
@@ -22,40 +22,41 @@ import {
   RiSendPlaneLine,
   RiAttachment2,
   RiCloseLine,
-  RiFileTextLine
-} from 'react-icons/ri'
-import { FaMemory } from 'react-icons/fa6'
-import { GiTinker } from 'react-icons/gi'
-import { HiComputerDesktop } from 'react-icons/hi2'
-import * as faceapi from 'face-api.js'
-import { VisionMode } from '@renderer/IndexRoot'
+  RiFileTextLine,
+} from "react-icons/ri";
+import { FaMemory } from "react-icons/fa6";
+import { GiTinker } from "react-icons/gi";
+import { HiComputerDesktop } from "react-icons/hi2";
+import * as faceapi from "face-api.js";
+import { VisionMode } from "@renderer/IndexRoot";
 
 interface JarvisProps {
-  isSystemActive: boolean
-  toggleSystem: () => void
-  isMicMuted: boolean
-  toggleMic: () => void
-  isVideoOn: boolean
-  visionMode: VisionMode
-  startVision: (mode: 'camera' | 'screen') => void
-  stopVision: () => void
-  activeStream: MediaStream | null
+  isSystemActive: boolean;
+  toggleSystem: () => void;
+  isMicMuted: boolean;
+  toggleMic: () => void;
+  isVideoOn: boolean;
+  visionMode: VisionMode;
+  startVision: (mode: "camera" | "screen") => void;
+  stopVision: () => void;
+  activeStream: MediaStream | null;
 }
 
 interface DashboardViewProps {
-  props: JarvisProps
-  stats: any
-  chatHistory: any[]
-  onVisionClick: () => void
+  props: JarvisProps;
+  stats: any;
+  chatHistory: any[];
+  onVisionClick: () => void;
 }
 
-const glassPanel = 'bg-zinc-950/40 backdrop-blur-sm border border-white/5 rounded-2xl shadow-xl'
+const glassPanel =
+  "bg-zinc-950/40 backdrop-blur-sm border border-white/5 rounded-2xl shadow-xl";
 
 export default function DashboardView({
   props,
   stats,
   chatHistory,
-  onVisionClick
+  onVisionClick,
 }: DashboardViewProps) {
   const {
     isSystemActive,
@@ -65,57 +66,65 @@ export default function DashboardView({
     activeStream,
     toggleMic,
     toggleSystem,
-    isMicMuted
-  } = props
+    isMicMuted,
+  } = props;
 
-  const scrollRef = useRef<HTMLDivElement>(null)
-  const videoElementRef = useRef<HTMLVideoElement | null>(null)
-  const canvasRef = useRef<HTMLCanvasElement | null>(null)
-  const faceScanInterval = useRef<NodeJS.Timeout | null>(null)
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const videoElementRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const faceScanInterval = useRef<NodeJS.Timeout | null>(null);
 
-  const [modelsLoaded, setModelsLoaded] = useState(false)
+  const [modelsLoaded, setModelsLoaded] = useState(false);
 
-  const [networkStats, setNetworkStats] = useState({ ping: 24, rate: 1.2, tx: 40, rx: 60 })
+  const [networkStats, setNetworkStats] = useState({
+    ping: 24,
+    rate: 1.2,
+    tx: 40,
+    rx: 60,
+  });
 
-  const [chatInput, setChatInput] = useState('')
-  const [selectedFile, setSelectedFile] = useState<{name: string, path: string} | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [chatInput, setChatInput] = useState("");
+  const [selectedFile, setSelectedFile] = useState<{
+    name: string;
+    path: string;
+  } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSendChat = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault()
-    
-    if (chatInput.trim() === '/clear') {
-      await clearHistory()
-      setChatInput('')
-      return
+    if (e) e.preventDefault();
+
+    if (chatInput.trim() === "/clear") {
+      await clearHistory();
+      setChatInput("");
+      return;
     }
 
     if (chatInput.trim() || selectedFile) {
-      if (selectedFile) jarvisService.setFile(selectedFile.path)
-      const text = chatInput.trim()
+      if (selectedFile) jarvisService.setFile(selectedFile.path);
+      const text = chatInput.trim();
       if (text) {
-        await saveMessage('user', text)
-        jarvisService.sendTextCommand(text)
+        await saveMessage("user", text);
+        jarvisService.sendTextCommand(text);
       }
-      setChatInput('')
-      setSelectedFile(null)
+      setChatInput("");
+      setSelectedFile(null);
     }
-  }
+  };
 
   useEffect(() => {
     // Delay slightly to ensure ReactMarkdown finishes rendering DOM nodes
     const timer = setTimeout(() => {
       if (scrollRef.current) {
-        scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
       }
-    }, 50)
-    return () => clearTimeout(timer)
-  }, [chatHistory])
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [chatHistory]);
 
   useEffect(() => {
     if (!isSystemActive) {
-      setNetworkStats({ ping: 0, rate: 0.0, tx: 0, rx: 0 })
-      return
+      setNetworkStats({ ping: 0, rate: 0.0, tx: 0, rx: 0 });
+      return;
     }
 
     const interval = setInterval(() => {
@@ -123,204 +132,222 @@ export default function DashboardView({
         ping: Math.floor(Math.random() * (45 - 12 + 1)) + 12,
         rate: +(Math.random() * 8.5 + 0.5).toFixed(2),
         tx: Math.floor(Math.random() * 100),
-        rx: Math.floor(Math.random() * 100)
-      })
-    }, 1700)
+        rx: Math.floor(Math.random() * 100),
+      });
+    }, 1700);
 
-    return () => clearInterval(interval)
-  }, [isSystemActive])
+    return () => clearInterval(interval);
+  }, [isSystemActive]);
 
   useEffect(() => {
     const loadModels = async () => {
       try {
-        const MODEL_URL = './models'
+        const MODEL_URL = "./models";
         await Promise.all([
           faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
           faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL),
-          faceapi.nets.ageGenderNet.loadFromUri(MODEL_URL)
-        ])
-        setModelsLoaded(true)
+          faceapi.nets.ageGenderNet.loadFromUri(MODEL_URL),
+        ]);
+        setModelsLoaded(true);
       } catch (e) {}
-    }
-    loadModels()
-  }, [])
+    };
+    loadModels();
+  }, []);
 
   useEffect(() => {
     if (
       isVideoOn &&
-      visionMode === 'camera' &&
+      visionMode === "camera" &&
       modelsLoaded &&
       videoElementRef.current &&
       canvasRef.current
     ) {
-      if (faceScanInterval.current) clearInterval(faceScanInterval.current)
+      if (faceScanInterval.current) clearInterval(faceScanInterval.current);
 
       faceScanInterval.current = setInterval(async () => {
-        const video = videoElementRef.current
-        const canvas = canvasRef.current
-        if (!video || !canvas || video.readyState !== 4 || video.videoWidth === 0) return
+        const video = videoElementRef.current;
+        const canvas = canvasRef.current;
+        if (
+          !video ||
+          !canvas ||
+          video.readyState !== 4 ||
+          video.videoWidth === 0
+        )
+          return;
 
         try {
-          const vw = video.videoWidth
-          const vh = video.videoHeight
+          const vw = video.videoWidth;
+          const vh = video.videoHeight;
 
           if (canvas.width !== vw || canvas.height !== vh) {
-            canvas.width = vw
-            canvas.height = vh
+            canvas.width = vw;
+            canvas.height = vh;
           }
 
-          const ctx = canvas.getContext('2d')
-          if (!ctx) return
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return;
 
-          const options = new faceapi.SsdMobilenetv1Options({ minConfidence: 0.3 })
+          const options = new faceapi.SsdMobilenetv1Options({
+            minConfidence: 0.3,
+          });
           const detection = await faceapi
             .detectSingleFace(video, options)
             .withFaceExpressions()
-            .withAgeAndGender()
+            .withAgeAndGender();
 
-          ctx.clearRect(0, 0, vw, vh)
+          ctx.clearRect(0, 0, vw, vh);
 
           if (detection) {
-            const { x, y, width, height } = detection.detection.box
+            const { x, y, width, height } = detection.detection.box;
 
-            const mirroredX = vw - x - width
+            const mirroredX = vw - x - width;
 
-            ctx.strokeStyle = '#34d399'
-            ctx.lineWidth = 4
-            const l = 25
+            ctx.strokeStyle = "#34d399";
+            ctx.lineWidth = 4;
+            const l = 25;
 
-            ctx.beginPath()
-            ctx.moveTo(mirroredX, y + l)
-            ctx.lineTo(mirroredX, y)
-            ctx.lineTo(mirroredX + l, y)
-            ctx.moveTo(mirroredX + width - l, y)
-            ctx.lineTo(mirroredX + width, y)
-            ctx.lineTo(mirroredX + width, y + l)
-            ctx.moveTo(mirroredX, y + height - l)
-            ctx.lineTo(mirroredX, y + height)
-            ctx.lineTo(mirroredX + l, y + height)
-            ctx.moveTo(mirroredX + width - l, y + height)
-            ctx.lineTo(mirroredX + width, y + height)
-            ctx.lineTo(mirroredX + width, y + height - l)
-            ctx.stroke()
+            ctx.beginPath();
+            ctx.moveTo(mirroredX, y + l);
+            ctx.lineTo(mirroredX, y);
+            ctx.lineTo(mirroredX + l, y);
+            ctx.moveTo(mirroredX + width - l, y);
+            ctx.lineTo(mirroredX + width, y);
+            ctx.lineTo(mirroredX + width, y + l);
+            ctx.moveTo(mirroredX, y + height - l);
+            ctx.lineTo(mirroredX, y + height);
+            ctx.lineTo(mirroredX + l, y + height);
+            ctx.moveTo(mirroredX + width - l, y + height);
+            ctx.lineTo(mirroredX + width, y + height);
+            ctx.lineTo(mirroredX + width, y + height - l);
+            ctx.stroke();
 
-            const expressions = detection.expressions
+            const expressions = detection.expressions;
             const domExp = Object.keys(expressions).reduce((a, b) =>
-              expressions[a] > expressions[b] ? a : b
-            )
-            const gender = detection.gender === 'male' ? 'M' : 'F'
-            const age = Math.round(detection.age)
-            const labelText = ` ID:${gender} | AGE:${age} | ${domExp.toUpperCase()} `
+              expressions[a] > expressions[b] ? a : b,
+            );
+            const gender = detection.gender === "male" ? "M" : "F";
+            const age = Math.round(detection.age);
+            const labelText = ` ID:${gender} | AGE:${age} | ${domExp.toUpperCase()} `;
 
-            ctx.fillStyle = 'rgba(10, 10, 10, 0.85)'
-            ctx.fillRect(mirroredX, y - 32, width, 26)
+            ctx.fillStyle = "rgba(10, 10, 10, 0.85)";
+            ctx.fillRect(mirroredX, y - 32, width, 26);
 
-            ctx.fillStyle = '#34d399'
-            ctx.font = 'bold 16px monospace'
-            ctx.fillText(labelText, mirroredX + 5, y - 14)
+            ctx.fillStyle = "#34d399";
+            ctx.font = "bold 16px monospace";
+            ctx.fillText(labelText, mirroredX + 5, y - 14);
           } else {
-            ctx.fillStyle = 'rgba(52, 211, 153, 0.8)'
-            ctx.font = 'bold 14px monospace'
-            ctx.fillText('SCANNING OPTICS...', 20, 30)
+            ctx.fillStyle = "rgba(52, 211, 153, 0.8)";
+            ctx.font = "bold 14px monospace";
+            ctx.fillText("SCANNING OPTICS...", 20, 30);
           }
         } catch (e) {}
-      }, 1000)
+      }, 1000);
     } else {
-      if (faceScanInterval.current) clearInterval(faceScanInterval.current)
-      const ctx = canvasRef.current?.getContext('2d')
-      if (ctx) ctx.clearRect(0, 0, canvasRef.current!.width, canvasRef.current!.height)
+      if (faceScanInterval.current) clearInterval(faceScanInterval.current);
+      const ctx = canvasRef.current?.getContext("2d");
+      if (ctx)
+        ctx.clearRect(
+          0,
+          0,
+          canvasRef.current!.width,
+          canvasRef.current!.height,
+        );
     }
 
     return () => {
-      if (faceScanInterval.current) clearInterval(faceScanInterval.current)
-    }
-  }, [isVideoOn, visionMode, modelsLoaded])
+      if (faceScanInterval.current) clearInterval(faceScanInterval.current);
+    };
+  }, [isVideoOn, visionMode, modelsLoaded]);
 
   const setVideoRef = useCallback(
     (node: HTMLVideoElement | null) => {
-      videoElementRef.current = node
+      videoElementRef.current = node;
       if (node && activeStream && isVideoOn) {
-        node.srcObject = activeStream
-        node.onloadedmetadata = () => node.play().catch(() => {})
+        node.srcObject = activeStream;
+        node.onloadedmetadata = () => node.play().catch(() => {});
       }
     },
-    [activeStream, isVideoOn, visionMode]
-  )
+    [activeStream, isVideoOn, visionMode],
+  );
 
   const setMobileVideoRef = useCallback(
     (node: HTMLVideoElement | null) => {
       if (node && activeStream && isVideoOn) {
-        node.srcObject = activeStream
-        node.onloadedmetadata = () => node.play().catch(() => {})
+        node.srcObject = activeStream;
+        node.onloadedmetadata = () => node.play().catch(() => {});
       }
     },
-    [activeStream, isVideoOn, visionMode]
-  )
+    [activeStream, isVideoOn, visionMode],
+  );
 
   const toggleSource = () => {
-    if (!isSystemActive) return
-    const nextMode = visionMode === 'camera' ? 'screen' : 'camera'
-    startVision(nextMode)
-  }
+    if (!isSystemActive) return;
+    const nextMode = visionMode === "camera" ? "screen" : "camera";
+    startVision(nextMode);
+  };
 
   const systemMetrics = [
     {
       icon: <RiCpuLine />,
       bgIcon: <RiCpuLine size={140} />,
-      label: 'CPU LOAD',
-      val: isSystemActive && stats ? `${stats.cpu}%` : '--',
+      label: "CPU LOAD",
+      val: isSystemActive && stats ? `${stats.cpu}%` : "--",
       raw: isSystemActive && stats ? stats.cpu : 0,
-      colorClass: 'text-emerald-400',
-      bgClass: 'bg-emerald-500',
-      glowClass: 'via-emerald-500/50',
-      shadowClass: 'shadow-[0_0_8px_#10b981]',
-      bgGradient: 'from-emerald-950/30 to-black/60',
+      colorClass: "text-emerald-400",
+      bgClass: "bg-emerald-500",
+      glowClass: "via-emerald-500/50",
+      shadowClass: "shadow-[0_0_8px_#10b981]",
+      bgGradient: "from-emerald-950/30 to-black/60",
       pattern:
-        'bg-[linear-linear(to_right,#10b98108_1px,transparent_1px),linear-linear(to_bottom,#10b98108_1px,transparent_1px)] bg-[size:12px_12px]'
+        "bg-[linear-linear(to_right,#10b98108_1px,transparent_1px),linear-linear(to_bottom,#10b98108_1px,transparent_1px)] bg-[size:12px_12px]",
     },
     {
       icon: <FaMemory />,
       bgIcon: <FaMemory size={140} />,
-      label: 'RAM USAGE',
-      val: isSystemActive && stats ? `${stats.memory.usedPercentage}%` : '--',
+      label: "RAM USAGE",
+      val: isSystemActive && stats ? `${stats.memory.usedPercentage}%` : "--",
       raw: isSystemActive && stats ? stats.memory.usedPercentage : 0,
-      colorClass: 'text-cyan-400',
-      bgClass: 'bg-cyan-500',
-      glowClass: 'via-cyan-500/50',
-      shadowClass: 'shadow-[0_0_8px_#06b6d4]',
-      bgGradient: 'from-cyan-950/30 to-black/60',
-      pattern: 'bg-[radial-linear(#06b6d415_1px,transparent_1px)] bg-[size:10px_10px]'
+      colorClass: "text-cyan-400",
+      bgClass: "bg-cyan-500",
+      glowClass: "via-cyan-500/50",
+      shadowClass: "shadow-[0_0_8px_#06b6d4]",
+      bgGradient: "from-cyan-950/30 to-black/60",
+      pattern:
+        "bg-[radial-linear(#06b6d415_1px,transparent_1px)] bg-[size:10px_10px]",
     },
     {
       icon: <GiTinker />,
       bgIcon: <GiTinker size={140} />,
-      label: 'TEMP',
-      val: isSystemActive && stats ? `${stats.temperature}°C` : '--',
-      raw: isSystemActive && stats ? Math.min((stats.temperature / 90) * 100, 100) : 0,
-      colorClass: 'text-orange-400',
-      bgClass: 'bg-orange-500',
-      glowClass: 'via-orange-500/50',
-      shadowClass: 'shadow-[0_0_8px_#f97316]',
-      bgGradient: 'from-orange-950/30 to-black/60',
+      label: "TEMP",
+      val: isSystemActive && stats ? `${stats.temperature}°C` : "--",
+      raw:
+        isSystemActive && stats
+          ? Math.min((stats.temperature / 90) * 100, 100)
+          : 0,
+      colorClass: "text-orange-400",
+      bgClass: "bg-orange-500",
+      glowClass: "via-orange-500/50",
+      shadowClass: "shadow-[0_0_8px_#f97316]",
+      bgGradient: "from-orange-950/30 to-black/60",
       pattern:
-        'bg-[radial-linear(ellipse_at_top_right,_var(--tw-linear-stops))] from-orange-900/20 via-transparent to-transparent'
+        "bg-[radial-linear(ellipse_at_top_right,_var(--tw-linear-stops))] from-orange-900/20 via-transparent to-transparent",
     },
     {
       icon: <HiComputerDesktop />,
       bgIcon: <HiComputerDesktop size={140} />,
-      label: 'OS',
-      val: isSystemActive && stats ? `${stats.os.type}` : '--',
+      label: "OS",
+      val: isSystemActive && stats ? `${stats.os.type}` : "--",
       raw: 0,
-      colorClass: 'text-purple-400',
-      bgClass: 'bg-purple-500',
-      glowClass: 'via-purple-500/50',
-      shadowClass: '',
-      bgGradient: 'from-purple-950/30 to-black/60',
+      colorClass: "text-purple-400",
+      bgClass: "bg-purple-500",
+      glowClass: "via-purple-500/50",
+      shadowClass: "",
+      bgGradient: "from-purple-950/30 to-black/60",
       pattern:
-        'bg-[linear-linear(45deg,#a855f708_25%,transparent_25%,transparent_50%,#a855f708_50%,#a855f708_75%,transparent_75%,transparent)] bg-[size:24px_24px]',
-      hideBar: true
-    }
-  ]
+        "bg-[linear-linear(45deg,#a855f708_25%,transparent_25%,transparent_50%,#a855f708_50%,#a855f708_75%,transparent_75%,transparent)] bg-[size:24px_24px]",
+      hideBar: true,
+    },
+  ];
 
   return (
     <div className="flex-1 p-4 bg-white/2 grid grid-cols-12 gap-4 h-full overflow-hidden relative animate-in fade-in zoom-in duration-300 w-full">
@@ -330,16 +357,16 @@ export default function DashboardView({
         >
           <div className="absolute top-3 left-3 z-30 flex items-center gap-2">
             <span
-              className={`w-1.5 h-1.5 rounded-full ${isVideoOn ? 'bg-red-500 animate-pulse shadow-[0_0_8px_red]' : 'bg-zinc-600'}`}
+              className={`w-1.5 h-1.5 rounded-full ${isVideoOn ? "bg-red-500 animate-pulse shadow-[0_0_8px_red]" : "bg-zinc-600"}`}
             />
             <span
-              className={`text-[9px] font-bold tracking-widest ${isVideoOn ? 'text-red-400/80' : 'text-zinc-600'}`}
+              className={`text-[9px] font-bold tracking-widest ${isVideoOn ? "text-red-400/80" : "text-zinc-600"}`}
             >
               {isVideoOn
-                ? visionMode === 'screen'
-                  ? 'SCREEN FEED'
-                  : 'OPTICAL FEED'
-                : 'OPTICS OFFLINE'}
+                ? visionMode === "screen"
+                  ? "SCREEN FEED"
+                  : "OPTICAL FEED"
+                : "OPTICS OFFLINE"}
             </span>
           </div>
 
@@ -355,12 +382,12 @@ export default function DashboardView({
           )}
 
           <div
-            className={`w-full h-full rounded-xl overflow-hidden bg-black/20 relative border border-white/5 transition-all ${isVideoOn ? 'opacity-100' : 'opacity-30'}`}
+            className={`w-full h-full rounded-xl overflow-hidden bg-black/20 relative border border-white/5 transition-all ${isVideoOn ? "opacity-100" : "opacity-30"}`}
           >
             <video
               key={visionMode}
               ref={setVideoRef}
-              className={`absolute inset-0 w-full h-full object-cover ${visionMode === 'camera' ? '-scale-x-100' : ''}`}
+              className={`absolute inset-0 w-full h-full object-cover ${visionMode === "camera" ? "-scale-x-100" : ""}`}
               autoPlay
               playsInline
               muted
@@ -384,18 +411,22 @@ export default function DashboardView({
           className={`${glassPanel} h-32 shrink-0 p-4 flex flex-col justify-between relative overflow-hidden`}
         >
           <div
-            className={`absolute inset-0 bg-linear-to-r from-emerald-500/5 to-transparent transition-opacity duration-1000 ${isSystemActive ? 'opacity-100' : 'opacity-0'}`}
+            className={`absolute inset-0 bg-linear-to-r from-emerald-500/5 to-transparent transition-opacity duration-1000 ${isSystemActive ? "opacity-100" : "opacity-0"}`}
           />
 
           <div className="flex items-center justify-between border-b border-white/10 pb-2 relative z-10">
             <span className="text-[10px] font-bold tracking-widest text-zinc-400 flex items-center gap-1">
-              <RiPulseLine className={isSystemActive ? 'text-emerald-500 animate-pulse' : ''} />{' '}
+              <RiPulseLine
+                className={
+                  isSystemActive ? "text-emerald-500 animate-pulse" : ""
+                }
+              />{" "}
               NETWORK TELEMETRY
             </span>
             <span
-              className={`text-[8px] px-2 py-0.5 rounded-full font-mono font-bold border ${isSystemActive ? 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' : 'text-zinc-600 border-zinc-800 bg-zinc-900'}`}
+              className={`text-[8px] px-2 py-0.5 rounded-full font-mono font-bold border ${isSystemActive ? "text-emerald-400 border-emerald-500/30 bg-emerald-500/10" : "text-zinc-600 border-zinc-800 bg-zinc-900"}`}
             >
-              {isSystemActive ? 'SECURE UPLINK' : 'STANDBY'}
+              {isSystemActive ? "SECURE UPLINK" : "STANDBY"}
             </span>
           </div>
 
@@ -405,8 +436,12 @@ export default function DashboardView({
                 WSS LATENCY
               </span>
               <span className="text-xs font-bold text-emerald-50 font-mono flex items-center gap-1.5 transition-all">
-                <RiWifiLine className={isSystemActive ? 'text-emerald-400' : 'text-zinc-600'} />
-                {isSystemActive ? `${networkStats.ping}ms` : '--'}
+                <RiWifiLine
+                  className={
+                    isSystemActive ? "text-emerald-400" : "text-zinc-600"
+                  }
+                />
+                {isSystemActive ? `${networkStats.ping}ms` : "--"}
               </span>
             </div>
 
@@ -415,14 +450,16 @@ export default function DashboardView({
                 PACKET RATE
               </span>
               <span className="text-xs font-bold text-emerald-50 font-mono transition-all">
-                {isSystemActive ? `${networkStats.rate} MB/s` : '--'}
+                {isSystemActive ? `${networkStats.rate} MB/s` : "--"}
               </span>
             </div>
 
             <div className="flex flex-col items-end">
-              <span className="text-[8px] text-zinc-600 font-mono tracking-widest">ROUTING</span>
+              <span className="text-[8px] text-zinc-600 font-mono tracking-widest">
+                ROUTING
+              </span>
               <span className="text-xs font-bold text-emerald-50 font-mono flex items-center gap-1.5">
-                {isSystemActive ? 'GLOBAL' : 'LOCAL'}
+                {isSystemActive ? "GLOBAL" : "LOCAL"}
                 {isSystemActive ? (
                   <RiEarthLine className="text-cyan-400" />
                 ) : (
@@ -500,7 +537,7 @@ export default function DashboardView({
                     <div className="w-full h-1 bg-black/40 rounded-full overflow-hidden backdrop-blur-sm border border-white/5">
                       <div
                         className={`h-full ${m.bgClass} ${m.shadowClass} transition-all duration-700 ease-out`}
-                        style={{ width: isSystemActive ? `${m.raw}%` : '0%' }}
+                        style={{ width: isSystemActive ? `${m.raw}%` : "0%" }}
                       />
                     </div>
                   )}
@@ -513,11 +550,11 @@ export default function DashboardView({
 
       <div className="col-span-12 lg:col-span-6 relative flex flex-col items-center justify-center">
         <div
-          className={`lg:hidden absolute top-4 right-4 w-32 h-24 ${glassPanel} z-50 overflow-hidden ${isVideoOn ? 'block' : 'hidden'}`}
+          className={`lg:hidden absolute top-4 right-4 w-32 h-24 ${glassPanel} z-50 overflow-hidden ${isVideoOn ? "block" : "hidden"}`}
         >
           <video
             ref={setMobileVideoRef}
-            className={`w-full h-full object-cover ${visionMode === 'camera' ? '-scale-x-100' : ''}`}
+            className={`w-full h-full object-cover ${visionMode === "camera" ? "-scale-x-100" : ""}`}
             autoPlay
             playsInline
             muted
@@ -525,7 +562,7 @@ export default function DashboardView({
         </div>
 
         <div
-          className={`w-[60vh] h-[60vh] max-w-full transition-all duration-1000 ${isSystemActive ? 'opacity-100 scale-100' : 'opacity-85 scale-90 grayscale'}`}
+          className={`w-[60vh] h-[60vh] max-w-full transition-all duration-1000 ${isSystemActive ? "opacity-100 scale-100" : "opacity-85 scale-90 grayscale"}`}
         >
           <Sphere />
         </div>
@@ -538,24 +575,40 @@ export default function DashboardView({
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               onClick={onVisionClick}
-              className={`cursor-pointer p-3 rounded-full transition-all ${isVideoOn ? 'bg-red-500/20 text-red-400' : 'hover:bg-white/10 text-zinc-400'}`}
+              className={`cursor-pointer p-3 rounded-full transition-all ${isVideoOn ? "bg-red-500/20 text-red-400" : "hover:bg-white/10 text-zinc-400"}`}
             >
-              {isVideoOn ? <RiSwapBoxLine size={20} /> : <RiCameraLine size={20} />}
+              {isVideoOn ? (
+                <RiSwapBoxLine size={20} />
+              ) : (
+                <RiCameraLine size={20} />
+              )}
             </motion.button>
-            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={toggleSystem} className="relative group mx-2 cursor-pointer">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={toggleSystem}
+              className="relative group mx-2 cursor-pointer"
+            >
               <div
-                className={`cursor-pointer p-4 rounded-full border-2 transition-all duration-500 ${isSystemActive ? 'bg-emerald-500 border-emerald-400 text-black shadow-[0_0_20px_#10b981]' : 'bg-red-500/10 border-red-500/50 text-red-500'}`}
+                className={`cursor-pointer p-4 rounded-full border-2 transition-all duration-500 ${isSystemActive ? "bg-emerald-500 border-emerald-400 text-black shadow-[0_0_20px_#10b981]" : "bg-red-500/10 border-red-500/50 text-red-500"}`}
               >
-                <RiPhoneFill size={24} className={isSystemActive ? 'animate-pulse' : ''} />
+                <RiPhoneFill
+                  size={24}
+                  className={isSystemActive ? "animate-pulse" : ""}
+                />
               </div>
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               onClick={toggleMic}
-              className={`cursor-pointer p-3 rounded-full transition-all ${isMicMuted ? 'bg-red-500/20 text-red-400' : 'bg-emerald-500/10 text-emerald-400'}`}
+              className={`cursor-pointer p-3 rounded-full transition-all ${isMicMuted ? "bg-red-500/20 text-red-400" : "bg-emerald-500/10 text-emerald-400"}`}
             >
-              {isMicMuted ? <RiMicOffLine size={20} /> : <RiMicLine size={20} />}
+              {isMicMuted ? (
+                <RiMicOffLine size={20} />
+              ) : (
+                <RiMicLine size={20} />
+              )}
             </motion.button>
           </div>
         </div>
@@ -567,9 +620,14 @@ export default function DashboardView({
             <span className="text-[10px] font-bold tracking-widest text-zinc-400">
               <RiTerminalBoxLine className="inline mr-1" /> TRANSCRIPT
             </span>
-            <span className="text-[8px] font-mono text-emerald-500/50">LIVE-LOG</span>
+            <span className="text-[8px] font-mono text-emerald-500/50">
+              LIVE-LOG
+            </span>
           </div>
-          <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-3 pr-2 scrollbar-small">
+          <div
+            ref={scrollRef}
+            className="flex-1 overflow-y-auto space-y-3 pr-2 scrollbar-small"
+          >
             {chatHistory.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-zinc-700 gap-2 opacity-50">
                 <RiHistoryLine size={24} />
@@ -581,14 +639,16 @@ export default function DashboardView({
               chatHistory.map((msg, idx) => (
                 <div
                   key={idx}
-                  className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} mb-4`}
+                  className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"} mb-4`}
                 >
                   <div
-                    className={`max-w-[95%] py-3 px-4 rounded-xl text-xs leading-relaxed border font-mono whitespace-pre-wrap break-words shadow-lg ${msg.role === 'user' ? 'bg-emerald-900/30 border-emerald-500/30 text-emerald-100 rounded-br-none' : 'bg-zinc-900/80 border-white/10 text-zinc-300 rounded-bl-none'}`}
+                    className={`max-w-[95%] py-3 px-4 rounded-xl text-xs leading-relaxed border font-mono whitespace-pre-wrap break-words shadow-lg ${msg.role === "user" ? "bg-emerald-900/30 border-emerald-500/30 text-emerald-100 rounded-br-none" : "bg-zinc-900/80 border-white/10 text-zinc-300 rounded-bl-none"}`}
                   >
                     <div className="prose prose-invert max-w-none prose-p:my-1 prose-pre:bg-black/50 prose-pre:border prose-pre:border-white/10 prose-pre:p-2 prose-pre:rounded-lg prose-code:text-emerald-400 prose-code:bg-black/30 prose-code:px-1 prose-code:rounded">
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {msg.parts && msg.parts[0] ? msg.parts[0].text : msg.content}
+                        {msg.parts && msg.parts[0]
+                          ? msg.parts[0].text
+                          : msg.content}
                       </ReactMarkdown>
                     </div>
                   </div>
@@ -596,15 +656,17 @@ export default function DashboardView({
               ))
             )}
           </div>
-          
+
           <div className="mt-3 pt-3 border-t border-white/10 shrink-0">
             {selectedFile && (
               <div className="flex items-center justify-between bg-emerald-900/20 border border-emerald-500/20 p-2 rounded-lg mb-2">
                 <div className="flex items-center gap-2 overflow-hidden">
                   <RiFileTextLine className="text-emerald-400 shrink-0" />
-                  <span className="text-xs text-emerald-100/90 font-mono truncate">{selectedFile.name}</span>
+                  <span className="text-xs text-emerald-100/90 font-mono truncate">
+                    {selectedFile.name}
+                  </span>
                 </div>
-                <motion.button 
+                <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => setSelectedFile(null)}
@@ -614,43 +676,50 @@ export default function DashboardView({
                 </motion.button>
               </div>
             )}
-            
+
             <form onSubmit={handleSendChat} className="flex gap-2 relative">
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                className="hidden" 
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
                 onChange={(e) => {
                   if (e.target.files && e.target.files.length > 0) {
-                    const file = e.target.files[0]
-                    setSelectedFile({ name: file.name, path: (file as any).path })
+                    const file = e.target.files[0];
+                    setSelectedFile({
+                      name: file.name,
+                      path: (file as any).path,
+                    });
                   }
                 }}
               />
-              <motion.button 
+              <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className={`p-3 rounded-xl border transition-all flex items-center justify-center shrink-0 cursor-pointer ${selectedFile ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400' : 'bg-black/40 border-white/10 text-zinc-400 hover:bg-white/10 hover:text-white'}`}
+                className={`p-3 rounded-xl border transition-all flex items-center justify-center shrink-0 cursor-pointer ${selectedFile ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-400" : "bg-black/40 border-white/10 text-zinc-400 hover:bg-white/10 hover:text-white"}`}
               >
                 <RiAttachment2 size={18} />
               </motion.button>
-              
+
               <input
                 type="text"
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 disabled={!isSystemActive}
-                placeholder={isSystemActive ? "Message JARVIS..." : "System offline..."}
+                placeholder={
+                  isSystemActive ? "Message JARVIS..." : "System offline..."
+                }
                 className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-mono text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               />
-              
+
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 type="submit"
-                disabled={(!chatInput.trim() && !selectedFile) || !isSystemActive}
+                disabled={
+                  (!chatInput.trim() && !selectedFile) || !isSystemActive
+                }
                 className="p-3 rounded-xl bg-emerald-500 text-black font-bold flex items-center justify-center shrink-0 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-emerald-400 transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)] cursor-pointer"
               >
                 <RiSendPlaneLine size={18} />
@@ -660,5 +729,5 @@ export default function DashboardView({
         </div>
       </div>
     </div>
-  )
+  );
 }

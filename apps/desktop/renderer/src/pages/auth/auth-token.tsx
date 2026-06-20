@@ -1,42 +1,42 @@
-import { useEffect } from 'react'
-import { useAuthStore } from '../../store/auth-store'
-import AxiosInstance from '../../config/axios-instance'
-import { useNavigate } from 'react-router-dom'
+import { useEffect } from "react";
+import { useAuthStore } from "../../store/auth-store";
+import AxiosInstance from "../../config/axios-instance";
+import { useNavigate } from "react-router-dom";
 
 export default function AuthInitializer() {
-  const setAccessToken = useAuthStore((s) => s.setAccessToken)
-  const setIsAuthInitialized = useAuthStore((s: any) => s.setIsAuthInitialized)
+  const setAccessToken = useAuthStore((s) => s.setAccessToken);
+  const setIsAuthInitialized = useAuthStore((s: any) => s.setIsAuthInitialized);
 
   useEffect(() => {
     const init = async () => {
       try {
-        const storedRefreshToken = localStorage.getItem('jarvis_cloud_token')
+        const storedRefreshToken = localStorage.getItem("jarvis_cloud_token");
 
         if (!storedRefreshToken) {
-          setAccessToken(null)
-          return
+          setAccessToken(null);
+          return;
         }
 
-        const res = await AxiosInstance.post('/users/refresh-token', {
-          refreshToken: storedRefreshToken
-        })
+        const res = await AxiosInstance.post("/users/refresh-token", {
+          refreshToken: storedRefreshToken,
+        });
 
-        const accessToken = res.data.accessToken
-        setAccessToken(accessToken)
+        const accessToken = res.data.accessToken;
+        setAccessToken(accessToken);
 
         if (res.data.refreshToken) {
-          localStorage.setItem('jarvis_cloud_token', res.data.refreshToken)
+          localStorage.setItem("jarvis_cloud_token", res.data.refreshToken);
         }
       } catch (err) {
-        setAccessToken(null)
-        localStorage.removeItem('jarvis_cloud_token')
+        setAccessToken(null);
+        localStorage.removeItem("jarvis_cloud_token");
       } finally {
-        if (setIsAuthInitialized) setIsAuthInitialized(true)
+        if (setIsAuthInitialized) setIsAuthInitialized(true);
       }
-    }
+    };
 
-    init()
-  }, [setAccessToken, setIsAuthInitialized])
+    init();
+  }, [setAccessToken, setIsAuthInitialized]);
 
-  return null
+  return null;
 }

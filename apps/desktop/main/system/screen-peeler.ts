@@ -6,51 +6,54 @@ import {
   globalShortcut,
   desktopCapturer,
   nativeImage,
-  safeStorage
-} from 'electron'
-import path from 'path'
-import fs from 'fs/promises'
-import fsSync from 'fs'
+  safeStorage,
+} from "electron";
+import path from "path";
+import fs from "fs/promises";
+import fsSync from "fs";
 
-import clipboardy from 'clipboardy'
-import Prism from 'prismjs'
+import clipboardy from "clipboardy";
+import Prism from "prismjs";
 
-const loadLanguages = require('prismjs/components/')
+const loadLanguages = require("prismjs/components/");
 loadLanguages([
-  'javascript',
-  'typescript',
-  'python',
-  'jsx',
-  'tsx',
-  'json',
-  'html',
-  'css',
-  'bash',
-  'yaml'
-])
+  "javascript",
+  "typescript",
+  "python",
+  "jsx",
+  "tsx",
+  "json",
+  "html",
+  "css",
+  "bash",
+  "yaml",
+]);
 
-let peelerWindow: BrowserWindow | null = null
+let peelerWindow: BrowserWindow | null = null;
 
 async function executeClipboardyWrite(text: string) {
-  const clipWrite = clipboardy.write || (clipboardy as any).default?.write
+  const clipWrite = clipboardy.write || (clipboardy as any).default?.write;
   if (clipWrite) {
-    await clipWrite(text)
+    await clipWrite(text);
   } else {
-    require('electron').clipboard.writeText(text)
+    require("electron").clipboard.writeText(text);
   }
 }
 
 export default function registerScreenPeeler() {
   const triggerPeeler = async () => {
-    if (peelerWindow) return
+    if (peelerWindow) return;
 
     try {
-      const primaryDisplay = screen.getPrimaryDisplay()
-      const { width, height } = primaryDisplay.bounds
+      const primaryDisplay = screen.getPrimaryDisplay();
+      const { width, height } = primaryDisplay.bounds;
 
-      const widgetDir = path.join(app.getPath('userData'), 'DynamicWidgets')
-      await fs.mkdir(widgetDir, { recursive: true })
-      const filePath = path.join(widgetDir, `peeler_overlay_${Date.now()}.html`)
+      const widgetDir = path.join(app.getPath("userData"), "DynamicWidgets");
+      await fs.mkdir(widgetDir, { recursive: true });
+      const filePath = path.join(
+        widgetDir,
+        `peeler_overlay_${Date.now()}.html`,
+      );
 
       const htmlCode = `
         <!DOCTYPE html>
@@ -123,8 +126,8 @@ export default function registerScreenPeeler() {
           </script>
         </body>
         </html>
-      `
-      await fs.writeFile(filePath, htmlCode, 'utf-8')
+      `;
+      await fs.writeFile(filePath, htmlCode, "utf-8");
 
       peelerWindow = new BrowserWindow({
         x: 0,
@@ -136,70 +139,71 @@ export default function registerScreenPeeler() {
         alwaysOnTop: true,
         skipTaskbar: true,
         resizable: false,
-        type: 'toolbar',
-        webPreferences: { nodeIntegration: true, contextIsolation: false }
-      })
+        type: "toolbar",
+        webPreferences: { nodeIntegration: true, contextIsolation: false },
+      });
 
-      peelerWindow.setAlwaysOnTop(true, 'screen-saver')
-      peelerWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
-      await peelerWindow.loadFile(filePath)
+      peelerWindow.setAlwaysOnTop(true, "screen-saver");
+      peelerWindow.setVisibleOnAllWorkspaces(true, {
+        visibleOnFullScreen: true,
+      });
+      await peelerWindow.loadFile(filePath);
 
-      peelerWindow.on('closed', () => {
-        peelerWindow = null
-        fs.unlink(filePath).catch(() => {})
-      })
-    } catch (error) {
-    }
-  }
+      peelerWindow.on("closed", () => {
+        peelerWindow = null;
+        fs.unlink(filePath).catch(() => {});
+      });
+    } catch (error) {}
+  };
 
-  globalShortcut.register('CommandOrControl+Alt+X', triggerPeeler)
+  globalShortcut.register("CommandOrControl+Alt+X", triggerPeeler);
 
-  ipcMain.on('copy-extracted-text', async (event, text) => {
-    if (!event) return
-    await executeClipboardyWrite(text)
-  })
+  ipcMain.on("copy-extracted-text", async (event, text) => {
+    if (!event) return;
+    await executeClipboardyWrite(text);
+  });
 
-  ipcMain.on('copy-extracted-image', (event, base64DataUrl) => {
-    if (!event) return
-    const image = nativeImage.createFromDataURL(base64DataUrl)
-    require('electron').clipboard.writeImage(image)
-  })
+  ipcMain.on("copy-extracted-image", (event, base64DataUrl) => {
+    if (!event) return;
+    const image = nativeImage.createFromDataURL(base64DataUrl);
+    require("electron").clipboard.writeImage(image);
+  });
 
-  ipcMain.on('peeler-result', async (event, coordinates) => {
-    if (!event) return
-    if (peelerWindow) peelerWindow.close()
-    if (!coordinates) return
+  ipcMain.on("peeler-result", async (event, coordinates) => {
+    if (!event) return;
+    if (peelerWindow) peelerWindow.close();
+    if (!coordinates) return;
 
-    let resultWindow: BrowserWindow | null = null
-    let filePath = ''
+    let resultWindow: BrowserWindow | null = null;
+    let filePath = "";
 
     try {
-      const primaryDisplay = screen.getPrimaryDisplay()
-      const scaleFactor = primaryDisplay.scaleFactor
+      const primaryDisplay = screen.getPrimaryDisplay();
+      const scaleFactor = primaryDisplay.scaleFactor;
 
-      await new Promise((resolve) => setTimeout(resolve, 150))
+      await new Promise((resolve) => setTimeout(resolve, 150));
 
       const sources = await desktopCapturer.getSources({
-        types: ['screen'],
+        types: ["screen"],
         thumbnailSize: {
           width: primaryDisplay.size.width * scaleFactor,
-          height: primaryDisplay.size.height * scaleFactor
-        }
-      })
+          height: primaryDisplay.size.height * scaleFactor,
+        },
+      });
 
       const croppedImage = sources[0].thumbnail.crop({
         x: Math.round(coordinates.x * scaleFactor),
         y: Math.round(coordinates.y * scaleFactor),
         width: Math.round(coordinates.width * scaleFactor),
-        height: Math.round(coordinates.height * scaleFactor)
-      })
+        height: Math.round(coordinates.height * scaleFactor),
+      });
 
-      const rawBase64 = croppedImage.toPNG().toString('base64')
-      const base64DataUrl = croppedImage.toDataURL()
+      const rawBase64 = croppedImage.toPNG().toString("base64");
+      const base64DataUrl = croppedImage.toDataURL();
 
-      const widgetDir = path.join(app.getPath('userData'), 'DynamicWidgets')
-      await fs.mkdir(widgetDir, { recursive: true })
-      filePath = path.join(widgetDir, `peel_result_${Date.now()}.html`)
+      const widgetDir = path.join(app.getPath("userData"), "DynamicWidgets");
+      await fs.mkdir(widgetDir, { recursive: true });
+      filePath = path.join(widgetDir, `peel_result_${Date.now()}.html`);
 
       const widgetHtml = `
         <!DOCTYPE html>
@@ -337,12 +341,15 @@ export default function registerScreenPeeler() {
           </script>
         </body>
         </html>
-      `
+      `;
 
-      await fs.writeFile(filePath, widgetHtml, 'utf-8')
+      await fs.writeFile(filePath, widgetHtml, "utf-8");
 
-      const finalWidth = Math.min(Math.max(coordinates.width, 450), 800)
-      const finalHeight = Math.min(Math.max(coordinates.height + 100, 300), 700)
+      const finalWidth = Math.min(Math.max(coordinates.width, 450), 800);
+      const finalHeight = Math.min(
+        Math.max(coordinates.height + 100, 300),
+        700,
+      );
 
       resultWindow = new BrowserWindow({
         x: coordinates.x,
@@ -353,107 +360,122 @@ export default function registerScreenPeeler() {
         frame: false,
         alwaysOnTop: true,
         skipTaskbar: true,
-        webPreferences: { nodeIntegration: true, contextIsolation: false }
-      })
+        webPreferences: { nodeIntegration: true, contextIsolation: false },
+      });
 
-      resultWindow.setAlwaysOnTop(true, 'screen-saver')
-      resultWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
-      await resultWindow.loadFile(filePath)
-      resultWindow.on('closed', () => {
-        if (filePath) fs.unlink(filePath).catch(() => {})
-      })
+      resultWindow.setAlwaysOnTop(true, "screen-saver");
+      resultWindow.setVisibleOnAllWorkspaces(true, {
+        visibleOnFullScreen: true,
+      });
+      await resultWindow.loadFile(filePath);
+      resultWindow.on("closed", () => {
+        if (filePath) fs.unlink(filePath).catch(() => {});
+      });
 
-      let extractedCode = ''
-      let detectedLanguage = 'javascript'
+      let extractedCode = "";
+      let detectedLanguage = "javascript";
 
       try {
-        let apiKey = ''
-        const secureConfigPath = path.join(app.getPath('userData'), 'jarvis_secure_vault.json')
+        let apiKey = "";
+        const secureConfigPath = path.join(
+          app.getPath("userData"),
+          "jarvis_secure_vault.json",
+        );
 
         if (fsSync.existsSync(secureConfigPath)) {
           try {
-            const data = JSON.parse(fsSync.readFileSync(secureConfigPath, 'utf8'))
+            const data = JSON.parse(
+              fsSync.readFileSync(secureConfigPath, "utf8"),
+            );
             if (safeStorage.isEncryptionAvailable()) {
-              apiKey = safeStorage.decryptString(Buffer.from(data.gemini, 'base64'))
+              apiKey = safeStorage.decryptString(
+                Buffer.from(data.gemini, "base64"),
+              );
             } else {
-              apiKey = Buffer.from(data.gemini, 'base64').toString('utf8')
+              apiKey = Buffer.from(data.gemini, "base64").toString("utf8");
             }
-          } catch (e) {
-          }
+          } catch (e) {}
         }
 
-        if (!apiKey || apiKey.trim() === '') {
-          throw new Error('Missing Gemini API Key. Please update it in the Command Center Vault.')
+        if (!apiKey || apiKey.trim() === "") {
+          throw new Error(
+            "Missing Gemini API Key. Please update it in the Command Center Vault.",
+          );
         }
 
         const response = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
           {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               contents: [
                 {
                   parts: [
                     {
-                      text: "Extract text/code. Output ONLY as JSON: {'language': 'javascript/python/etc', 'code': 'extracted text'}. No markdown blocks."
+                      text: "Extract text/code. Output ONLY as JSON: {'language': 'javascript/python/etc', 'code': 'extracted text'}. No markdown blocks.",
                     },
-                    { inline_data: { mime_type: 'image/png', data: rawBase64 } }
-                  ]
-                }
-              ]
-            })
-          }
-        )
+                    {
+                      inline_data: { mime_type: "image/png", data: rawBase64 },
+                    },
+                  ],
+                },
+              ],
+            }),
+          },
+        );
 
-        const data = await response.json()
-        const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text
+        const data = await response.json();
+        const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
         if (aiResponse) {
           try {
             const parsed = JSON.parse(
               aiResponse
-                .replace(/```json/g, '')
-                .replace(/```/g, '')
-                .trim()
-            )
-            detectedLanguage = (parsed.language || 'javascript').toLowerCase()
-            extractedCode = parsed.code || ''
+                .replace(/```json/g, "")
+                .replace(/```/g, "")
+                .trim(),
+            );
+            detectedLanguage = (parsed.language || "javascript").toLowerCase();
+            extractedCode = parsed.code || "";
           } catch (e) {
-            extractedCode = aiResponse
+            extractedCode = aiResponse;
           }
         } else {
-          throw new Error('AI returned an empty or invalid response.')
+          throw new Error("AI returned an empty or invalid response.");
         }
 
-        await executeClipboardyWrite(extractedCode)
+        await executeClipboardyWrite(extractedCode);
 
-        const grammar = Prism.languages[detectedLanguage] || Prism.languages.javascript
-        const highlightedHTML = Prism.highlight(extractedCode, grammar, detectedLanguage)
+        const grammar =
+          Prism.languages[detectedLanguage] || Prism.languages.javascript;
+        const highlightedHTML = Prism.highlight(
+          extractedCode,
+          grammar,
+          detectedLanguage,
+        );
 
         const escapedRaw = extractedCode
-          .replace(/\\/g, '\\\\')
-          .replace(/\`/g, '\\`')
-          .replace(/\$/g, '\\$')
+          .replace(/\\/g, "\\\\")
+          .replace(/\`/g, "\\`")
+          .replace(/\$/g, "\\$");
         const escapedHTML = highlightedHTML
-          .replace(/\\/g, '\\\\')
-          .replace(/\`/g, '\\`')
-          .replace(/\$/g, '\\$')
+          .replace(/\\/g, "\\\\")
+          .replace(/\`/g, "\\`")
+          .replace(/\$/g, "\\$");
 
         if (resultWindow && !resultWindow.isDestroyed()) {
           resultWindow.webContents.executeJavaScript(
-            `window.injectResult(\`${escapedRaw}\`, \`${escapedHTML}\`);`
-          )
+            `window.injectResult(\`${escapedRaw}\`, \`${escapedHTML}\`);`,
+          );
         }
       } catch (error: any) {
         if (resultWindow && !resultWindow.isDestroyed()) {
           resultWindow.webContents.executeJavaScript(
-            `window.injectError('${error.message || 'Engine Failure'}');`
-          )
+            `window.injectError('${error.message || "Engine Failure"}');`,
+          );
         }
       }
-    } catch (error) {
-    }
-  })
+    } catch (error) {}
+  });
 }
-

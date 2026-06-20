@@ -1,27 +1,29 @@
-import { ipcMain, BrowserWindow, app } from 'electron'
-import path from 'path'
-import fs from 'fs/promises'
-import { GoogleGenAI } from '@google/genai'
+import { ipcMain, BrowserWindow, app } from "electron";
+import path from "path";
+import fs from "fs/promises";
+import { GoogleGenAI } from "@google/genai";
 
-let previewWin: BrowserWindow | null = null
+let previewWin: BrowserWindow | null = null;
 
 export default function registerWebsiteBuilder() {
-  ipcMain.handle('build-animated-website', async (event, { prompt, geminiKey }) => {
-    if (!event) return
-    try {
-      previewWin = new BrowserWindow({
-        width: 1280,
-        height: 720,
-        title: 'JARVIS Live Forge :: Web Synthesis',
-        backgroundColor: '#050505',
-        autoHideMenuBar: true,
-        webPreferences: {
-          nodeIntegration: false,
-          contextIsolation: true
-        }
-      })
+  ipcMain.handle(
+    "build-animated-website",
+    async (event, { prompt, geminiKey }) => {
+      if (!event) return;
+      try {
+        previewWin = new BrowserWindow({
+          width: 1280,
+          height: 720,
+          title: "JARVIS Live Forge :: Web Synthesis",
+          backgroundColor: "#050505",
+          autoHideMenuBar: true,
+          webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true,
+          },
+        });
 
-      const shellHtml = `
+        const shellHtml = `
         <html>
           <body style="margin:0; overflow:hidden; background: #050505;">
             <div id="loader" style="position:absolute; top:10px; left:10px; color:#00ffaa; font-family:monospace; font-size:12px; z-index:9999; text-shadow: 0 0 5px #00ffaa;">
@@ -30,18 +32,20 @@ export default function registerWebsiteBuilder() {
             <iframe id="live-frame" style="width:100vw; height:100vh; border:none;"></iframe>
           </body>
         </html>
-      `
-      await previewWin.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(shellHtml)}`)
+      `;
+        await previewWin.loadURL(
+          `data:text/html;charset=utf-8,${encodeURIComponent(shellHtml)}`,
+        );
 
-      if (!geminiKey || geminiKey.trim() === '') {
-        throw new Error(
-          'Missing Gemini API Key. Please configure it in the Command Center Vault (Settings Tab).'
-        )
-      }
+        if (!geminiKey || geminiKey.trim() === "") {
+          throw new Error(
+            "Missing Gemini API Key. Please configure it in the Command Center Vault (Settings Tab).",
+          );
+        }
 
-      const ai = new GoogleGenAI({ apiKey: geminiKey })
+        const ai = new GoogleGenAI({ apiKey: geminiKey });
 
-      const sysPrompt = `You are an elite, Awwwards-winning frontend developer and UI/UX designer. 
+        const sysPrompt = `You are an elite, Awwwards-winning frontend developer and UI/UX designer. 
 Build a highly animated, visually stunning, clean, and premium website based on the user prompt.
 
 CRITICAL RULES:
@@ -74,56 +78,60 @@ CRITICAL RULES:
    - Showcase/Gallery: Multiple working images in a masonry or horizontal scroll layout.
    - CTA & Footer: High energy, magnetic buttons, large text.
 
-OUTPUT ONLY RAW HTML.`
+OUTPUT ONLY RAW HTML.`;
 
-      const response = await ai.models.generateContentStream({
-        model: 'gemini-3-flash-preview',
-        contents: `${sysPrompt}\n\nUSER PROMPT: ${prompt}`
-      })
+        const response = await ai.models.generateContentStream({
+          model: "gemini-3-flash-preview",
+          contents: `${sysPrompt}\n\nUSER PROMPT: ${prompt}`,
+        });
 
-      let fullCode = ''
+        let fullCode = "";
 
-      for await (const chunk of response) {
-        if (chunk.text) {
-          fullCode += chunk.text
+        for await (const chunk of response) {
+          if (chunk.text) {
+            fullCode += chunk.text;
 
-          let cleanCode = fullCode.replace(/^```html\n?/, '').replace(/```$/, '')
+            const cleanCode = fullCode
+              .replace(/^```html\n?/, "")
+              .replace(/```$/, "");
 
-          const safeCode = encodeURIComponent(cleanCode)
-          if (previewWin && !previewWin.isDestroyed()) {
-            previewWin.webContents
-              .executeJavaScript(
-                `
+            const safeCode = encodeURIComponent(cleanCode);
+            if (previewWin && !previewWin.isDestroyed()) {
+              previewWin.webContents
+                .executeJavaScript(
+                  `
               document.getElementById('live-frame').srcdoc = decodeURIComponent('${safeCode.replace(/'/g, "\\'")}');
-            `
-              )
-              .catch(() => {})
+            `,
+                )
+                .catch(() => {});
+            }
           }
         }
-      }
 
-      if (previewWin && !previewWin.isDestroyed()) {
-        previewWin.webContents
-          .executeJavaScript(
-            `
+        if (previewWin && !previewWin.isDestroyed()) {
+          previewWin.webContents
+            .executeJavaScript(
+              `
           document.getElementById('loader').innerText = '[ SYNTHESIS COMPLETE ]'; 
           setTimeout(() => document.getElementById('loader').style.display = 'none', 3000);
-        `
-          )
-          .catch(() => {})
+        `,
+            )
+            .catch(() => {});
+        }
+
+        const dirPath = path.join(app.getPath("userData"), "Websites");
+        await fs.mkdir(dirPath, { recursive: true });
+
+        const filePath = path.join(dirPath, `website_${Date.now()}.html`);
+        const finalSaveCode = fullCode
+          .replace(/^```html\n?/, "")
+          .replace(/```$/, "");
+        await fs.writeFile(filePath, finalSaveCode.trim(), "utf-8");
+
+        return { success: true, filePath };
+      } catch (err) {
+        return { success: false, error: String(err) };
       }
-
-      const dirPath = path.join(app.getPath('userData'), 'Websites')
-      await fs.mkdir(dirPath, { recursive: true })
-
-      const filePath = path.join(dirPath, `website_${Date.now()}.html`)
-      const finalSaveCode = fullCode.replace(/^```html\n?/, '').replace(/```$/, '')
-      await fs.writeFile(filePath, finalSaveCode.trim(), 'utf-8')
-
-      return { success: true, filePath }
-    } catch (err) {
-      return { success: false, error: String(err) }
-    }
-  })
+    },
+  );
 }
-

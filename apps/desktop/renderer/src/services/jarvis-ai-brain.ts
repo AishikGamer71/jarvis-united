@@ -1,60 +1,67 @@
 export interface ChatMessage {
-  role: 'user' | 'model'
-  parts: [{ text: string }]
+  role: "user" | "model";
+  parts: [{ text: string }];
 }
 
-export const saveMessage = async (role: 'user' | 'model' | 'jarvis', text: string) => {
+export const saveMessage = async (
+  role: "user" | "model" | "jarvis",
+  text: string,
+) => {
   try {
-    if (!text) return
+    if (!text) return;
 
-    const safeRole = role === 'jarvis' ? 'model' : role
+    const safeRole = role === "jarvis" ? "model" : role;
 
-    await window.electron.ipcRenderer.invoke('add-message', {
+    await window.electron.ipcRenderer.invoke("add-message", {
       role: safeRole,
-      parts: [{ text: text }]
-    })
+      parts: [{ text: text }],
+    });
   } catch (err) {}
-}
+};
 
 export const getHistory = async (): Promise<ChatMessage[]> => {
   try {
-    const history = await window.electron.ipcRenderer.invoke('get-history')
-    return history || []
+    const history = await window.electron.ipcRenderer.invoke("get-history");
+    return history || [];
   } catch (e) {
-    return []
+    return [];
   }
-}
+};
 
 export const clearHistory = async (): Promise<boolean> => {
   try {
-    return await window.electron.ipcRenderer.invoke('clear-history')
+    return await window.electron.ipcRenderer.invoke("clear-history");
   } catch (e) {
-    return false
+    return false;
   }
-}
+};
 
 export const saveCoreMemory = async (fact: string): Promise<string> => {
   try {
-    const success = await window.electron.ipcRenderer.invoke('save-core-memory', fact)
+    const success = await window.electron.ipcRenderer.invoke(
+      "save-core-memory",
+      fact,
+    );
 
     if (success) {
-      return `✅ Successfully committed to permanent memory: "${fact}"`
+      return `✅ Successfully committed to permanent memory: "${fact}"`;
     }
-    return '❌ System failure: Could not save to permanent memory.'
+    return "❌ System failure: Could not save to permanent memory.";
   } catch (error) {
-    return `❌ System failure: ${String(error)}`
+    return `❌ System failure: ${String(error)}`;
   }
-}
+};
 
 export const retrieveCoreMemory = async (): Promise<string> => {
   try {
-    const memories = await window.electron.ipcRenderer.invoke('search-core-memory')
+    const memories =
+      await window.electron.ipcRenderer.invoke("search-core-memory");
 
     if (memories && memories.length > 0) {
-      return `Here is the permanent memory bank data:\n${JSON.stringify(memories)}`
+      return `Here is the permanent memory bank data:\n${JSON.stringify(memories)}`;
     }
-    return 'The permanent memory bank is currently empty.'
+    return "The permanent memory bank is currently empty.";
   } catch (error) {
-    return `❌ System failure: ${String(error)}`
+    return `❌ System failure: ${String(error)}`;
   }
-}
+};

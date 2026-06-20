@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   RiImage2Line,
   RiDeleteBinLine,
@@ -8,141 +8,146 @@ import {
   RiFileWarningLine,
   RiArrowLeftSLine,
   RiArrowRightSLine,
-  RiDownloadLine
-} from 'react-icons/ri'
-import { motion, AnimatePresence } from 'framer-motion'
+  RiDownloadLine,
+} from "react-icons/ri";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface GalleryImage {
-  filename: string
-  displayName: string
-  path: string
-  url: string
-  createdAt: Date
+  filename: string;
+  displayName: string;
+  path: string;
+  url: string;
+  createdAt: Date;
 }
 
 const GalleryView = () => {
-  const [allImages, setAllImages] = useState<GalleryImage[]>([])
-  const [visibleImages, setVisibleImages] = useState<GalleryImage[]>([])
-  const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null)
+  const [allImages, setAllImages] = useState<GalleryImage[]>([]);
+  const [visibleImages, setVisibleImages] = useState<GalleryImage[]>([]);
+  const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
 
-  const [direction, setDirection] = useState(0)
+  const [direction, setDirection] = useState(0);
 
-  const [page, setPage] = useState(1)
-  const ITEMS_PER_PAGE = 12
-  const observer = useRef<IntersectionObserver | null>(null)
+  const [page, setPage] = useState(1);
+  const ITEMS_PER_PAGE = 12;
+  const observer = useRef<IntersectionObserver | null>(null);
 
   const lastImageRef = useCallback(
     (node: HTMLDivElement) => {
-      if (observer.current) observer.current.disconnect()
+      if (observer.current) observer.current.disconnect();
       observer.current = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting && visibleImages.length < allImages.length) {
-          setPage((prev) => prev + 1)
+        if (
+          entries[0].isIntersecting &&
+          visibleImages.length < allImages.length
+        ) {
+          setPage((prev) => prev + 1);
         }
-      })
-      if (node) observer.current.observe(node)
+      });
+      if (node) observer.current.observe(node);
     },
-    [visibleImages.length, allImages.length]
-  )
+    [visibleImages.length, allImages.length],
+  );
 
   const fetchGallery = async () => {
     try {
-      const data = await window.electron.ipcRenderer.invoke('get-gallery')
-      if (Array.isArray(data)) setAllImages(data)
-    } catch (e) {
-    }
-  }
+      const data = await window.electron.ipcRenderer.invoke("get-gallery");
+      if (Array.isArray(data)) setAllImages(data);
+    } catch (e) {}
+  };
 
   useEffect(() => {
-    fetchGallery()
-    const interval = setInterval(fetchGallery, 5000)
-    return () => clearInterval(interval)
-  }, [])
+    fetchGallery();
+    const interval = setInterval(fetchGallery, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
-    const endIndex = page * ITEMS_PER_PAGE
-    setVisibleImages(allImages.slice(0, endIndex))
-  }, [page, allImages])
-
+    const endIndex = page * ITEMS_PER_PAGE;
+    setVisibleImages(allImages.slice(0, endIndex));
+  }, [page, allImages]);
 
   const deleteImage = async (filename: string, e?: React.MouseEvent) => {
-    e?.stopPropagation()
-    await window.electron.ipcRenderer.invoke('delete-image', filename)
+    e?.stopPropagation();
+    await window.electron.ipcRenderer.invoke("delete-image", filename);
 
     if (selectedImage) {
-      const currentIndex = allImages.findIndex((img) => img.filename === selectedImage.filename)
-      const nextImage = allImages[currentIndex + 1] || allImages[currentIndex - 1]
+      const currentIndex = allImages.findIndex(
+        (img) => img.filename === selectedImage.filename,
+      );
+      const nextImage =
+        allImages[currentIndex + 1] || allImages[currentIndex - 1];
 
       if (nextImage) {
-        setSelectedImage(nextImage)
+        setSelectedImage(nextImage);
       } else {
-        setSelectedImage(null)
+        setSelectedImage(null);
       }
     }
-    fetchGallery()
-  }
+    fetchGallery();
+  };
 
   const openLocation = async (path: string, e?: React.MouseEvent) => {
-    e?.stopPropagation()
-    await window.electron.ipcRenderer.invoke('open-image-location', path)
-  }
+    e?.stopPropagation();
+    await window.electron.ipcRenderer.invoke("open-image-location", path);
+  };
 
   const saveCopy = async (path: string, e?: React.MouseEvent) => {
-    e?.stopPropagation()
-    await window.electron.ipcRenderer.invoke('save-image-external', path)
-  }
-
+    e?.stopPropagation();
+    await window.electron.ipcRenderer.invoke("save-image-external", path);
+  };
 
   const navigateImage = useCallback(
     (newDirection: number) => {
-      if (!selectedImage || allImages.length === 0) return
+      if (!selectedImage || allImages.length === 0) return;
 
-      setDirection(newDirection)
+      setDirection(newDirection);
 
-      const currentIndex = allImages.findIndex((img) => img.filename === selectedImage.filename)
-      if (currentIndex === -1) return
+      const currentIndex = allImages.findIndex(
+        (img) => img.filename === selectedImage.filename,
+      );
+      if (currentIndex === -1) return;
 
-      let newIndex = currentIndex + newDirection
+      let newIndex = currentIndex + newDirection;
 
-      if (newIndex >= allImages.length) newIndex = 0
-      if (newIndex < 0) newIndex = allImages.length - 1
+      if (newIndex >= allImages.length) newIndex = 0;
+      if (newIndex < 0) newIndex = allImages.length - 1;
 
-      setSelectedImage(allImages[newIndex])
+      setSelectedImage(allImages[newIndex]);
     },
-    [selectedImage, allImages]
-  )
+    [selectedImage, allImages],
+  );
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!selectedImage) return
+      if (!selectedImage) return;
 
-      if (e.key === 'ArrowRight') navigateImage(1)
-      if (e.key === 'ArrowLeft') navigateImage(-1)
-      if (e.key === 'Escape') setSelectedImage(null)
-    }
+      if (e.key === "ArrowRight") navigateImage(1);
+      if (e.key === "ArrowLeft") navigateImage(-1);
+      if (e.key === "Escape") setSelectedImage(null);
+    };
 
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedImage, navigateImage])
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedImage, navigateImage]);
 
   const variants = {
     enter: (dir: number) => ({
       x: dir > 0 ? 1000 : -1000,
       opacity: 0,
-      scale: 0.8
+      scale: 0.8,
     }),
     center: {
       zIndex: 1,
       x: 0,
       opacity: 1,
-      scale: 1
+      scale: 1,
     },
     exit: (dir: number) => ({
       zIndex: 0,
       x: dir < 0 ? 1000 : -1000,
       opacity: 0,
-      scale: 0.8
-    })
-  }
+      scale: 0.8,
+    }),
+  };
 
   return (
     <div className="flex-1 bg-white/8 h-full p-8 animate-in fade-in zoom-in duration-500 flex flex-col overflow-hidden">
@@ -152,8 +157,12 @@ const GalleryView = () => {
             <RiImage2Line className="text-green-400" size={24} />
           </div>
           <div>
-            <h2 className="text-sm font-bold tracking-[0.2em] text-zinc-200">VISUAL VAULT</h2>
-            <p className="text-[10px] text-zinc-500 font-mono mt-0.5">GENERATED BY JARVIS</p>
+            <h2 className="text-sm font-bold tracking-[0.2em] text-zinc-200">
+              VISUAL VAULT
+            </h2>
+            <p className="text-[10px] text-zinc-500 font-mono mt-0.5">
+              GENERATED BY JARVIS
+            </p>
           </div>
         </div>
 
@@ -168,20 +177,22 @@ const GalleryView = () => {
             <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center border border-white/5">
               <RiImage2Line size={32} className="opacity-30" />
             </div>
-            <p className="text-xs tracking-widest opacity-50 font-mono">NO ARTIFACTS FOUND</p>
+            <p className="text-xs tracking-widest opacity-50 font-mono">
+              NO ARTIFACTS FOUND
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5 pb-10">
             {visibleImages.map((img, index) => {
-              const isLast = index === visibleImages.length - 1
+              const isLast = index === visibleImages.length - 1;
 
               return (
                 <div
                   key={`${img.filename}-${index}`}
                   ref={isLast ? lastImageRef : null}
                   onClick={() => {
-                    setDirection(0) 
-                    setSelectedImage(img)
+                    setDirection(0);
+                    setSelectedImage(img);
                   }}
                   className="group relative aspect-16/10 bg-zinc-900/50 rounded-xl border border-white/5 overflow-hidden hover:border-green-500/50 hover:shadow-[0_0_30px_rgba(168,85,247,0.15)] transition-all duration-300 cursor-pointer"
                 >
@@ -190,15 +201,19 @@ const GalleryView = () => {
                     alt={img.displayName}
                     loading="lazy"
                     onError={(e) => {
-                      e.currentTarget.style.display = 'none'
-                      e.currentTarget.nextElementSibling?.classList.remove('hidden')
+                      e.currentTarget.style.display = "none";
+                      e.currentTarget.nextElementSibling?.classList.remove(
+                        "hidden",
+                      );
                     }}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-70 group-hover:opacity-100 grayscale-20 group-hover:grayscale-0"
                   />
 
                   <div className="hidden absolute inset-0 items-center justify-center flex-col gap-2 bg-zinc-900">
                     <RiFileWarningLine className="text-red-500/50" size={24} />
-                    <span className="text-[8px] text-zinc-500">RENDER ERROR</span>
+                    <span className="text-[8px] text-zinc-500">
+                      RENDER ERROR
+                    </span>
                   </div>
 
                   <div className="absolute inset-0 bg-linear-to-t from-black via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end p-4 translate-y-2 group-hover:translate-y-0">
@@ -231,7 +246,7 @@ const GalleryView = () => {
                     </div>
                   </div>
                 </div>
-              )
+              );
             })}
           </div>
         )}
@@ -240,9 +255,9 @@ const GalleryView = () => {
       <AnimatePresence>
         {selectedImage && (
           <motion.div
-            initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
-            animate={{ opacity: 1, backdropFilter: 'blur(20px)' }}
-            exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+            initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
+            animate={{ opacity: 1, backdropFilter: "blur(20px)" }}
+            exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
             transition={{ duration: 0.3 }}
             className="fixed inset-0 z-9999 bg-black/90 flex items-center justify-center"
           >
@@ -275,7 +290,11 @@ const GalleryView = () => {
 
             <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden">
               <div className="relative w-full max-w-7xl h-[75vh] flex items-center justify-center">
-                <AnimatePresence initial={false} custom={direction} mode="popLayout">
+                <AnimatePresence
+                  initial={false}
+                  custom={direction}
+                  mode="popLayout"
+                >
                   <motion.img
                     key={selectedImage.filename}
                     src={selectedImage.url}
@@ -285,9 +304,9 @@ const GalleryView = () => {
                     animate="center"
                     exit="exit"
                     transition={{
-                      x: { type: 'spring', stiffness: 300, damping: 30 },
+                      x: { type: "spring", stiffness: 300, damping: 30 },
                       opacity: { duration: 0.2 },
-                      scale: { duration: 0.2 }
+                      scale: { duration: 0.2 },
                     }}
                     className="absolute max-w-full max-h-full rounded-lg shadow-[0_0_100px_rgba(0,0,0,0.8)] border border-white/10 object-contain"
                   />
@@ -300,7 +319,8 @@ const GalleryView = () => {
                     {selectedImage.displayName}
                   </h3>
                   <p className="text-xs text-zinc-500 font-mono">
-                    {new Date(selectedImage.createdAt).toLocaleString()} • GENERATED BY JARVIS
+                    {new Date(selectedImage.createdAt).toLocaleString()} •
+                    GENERATED BY JARVIS
                   </p>
                 </div>
 
@@ -338,7 +358,7 @@ const GalleryView = () => {
         )}
       </AnimatePresence>
     </div>
-  )
-}
+  );
+};
 
-export default GalleryView
+export default GalleryView;

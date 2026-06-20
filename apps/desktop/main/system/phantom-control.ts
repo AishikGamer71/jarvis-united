@@ -5,27 +5,27 @@ import {
   screen,
   globalShortcut,
   clipboard,
-  safeStorage
-} from 'electron'
-import { keyboard, Key } from '@nut-tree-fork/nut-js'
-import path from 'path'
-import fs from 'fs/promises'
-import fsSync from 'fs'
+  safeStorage,
+} from "electron";
+import { keyboard, Key } from "@nut-tree-fork/nut-js";
+import path from "path";
+import fs from "fs/promises";
+import fsSync from "fs";
 
-let phantomWindow: BrowserWindow | null = null
+let phantomWindow: BrowserWindow | null = null;
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export default function registerPhantomKeyboard() {
   const summonPhantom = async () => {
-    if (phantomWindow) return
+    if (phantomWindow) return;
 
     try {
-      const cursorPoint = screen.getCursorScreenPoint()
+      const cursorPoint = screen.getCursorScreenPoint();
 
-      const widgetDir = path.join(app.getPath('userData'), 'DynamicWidgets')
-      await fs.mkdir(widgetDir, { recursive: true })
-      const filePath = path.join(widgetDir, `phantom_ui_${Date.now()}.html`)
+      const widgetDir = path.join(app.getPath("userData"), "DynamicWidgets");
+      await fs.mkdir(widgetDir, { recursive: true });
+      const filePath = path.join(widgetDir, `phantom_ui_${Date.now()}.html`);
 
       const htmlCode = `
         <!DOCTYPE html>
@@ -151,8 +151,8 @@ export default function registerPhantomKeyboard() {
           </script>
         </body>
         </html>
-      `
-      await fs.writeFile(filePath, htmlCode, 'utf-8')
+      `;
+      await fs.writeFile(filePath, htmlCode, "utf-8");
 
       phantomWindow = new BrowserWindow({
         x: Math.round(cursorPoint.x - 250),
@@ -164,153 +164,169 @@ export default function registerPhantomKeyboard() {
         alwaysOnTop: true,
         skipTaskbar: true,
         resizable: false,
-        type: 'toolbar',
-        webPreferences: { nodeIntegration: true, contextIsolation: false }
-      })
+        type: "toolbar",
+        webPreferences: { nodeIntegration: true, contextIsolation: false },
+      });
 
-      phantomWindow.setAlwaysOnTop(true, 'screen-saver')
-      phantomWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
-      await phantomWindow.loadFile(filePath)
+      phantomWindow.setAlwaysOnTop(true, "screen-saver");
+      phantomWindow.setVisibleOnAllWorkspaces(true, {
+        visibleOnFullScreen: true,
+      });
+      await phantomWindow.loadFile(filePath);
 
-      phantomWindow.on('blur', () => {
+      phantomWindow.on("blur", () => {
         if (phantomWindow) {
-          phantomWindow.close()
-          phantomWindow = null
+          phantomWindow.close();
+          phantomWindow = null;
         }
-      })
+      });
 
-      phantomWindow.on('closed', () => {
-        phantomWindow = null
-        fs.unlink(filePath).catch(() => {})
-      })
-    } catch (error) {
-    }
-  }
+      phantomWindow.on("closed", () => {
+        phantomWindow = null;
+        fs.unlink(filePath).catch(() => {});
+      });
+    } catch (error) {}
+  };
 
-  globalShortcut.register('CommandOrControl+Alt+Space', summonPhantom)
+  globalShortcut.register("CommandOrControl+Alt+Space", summonPhantom);
 
-  ipcMain.on('phantom-close', () => {
-    if (phantomWindow) phantomWindow.close()
-  })
+  ipcMain.on("phantom-close", () => {
+    if (phantomWindow) phantomWindow.close();
+  });
 
-  ipcMain.on('phantom-resize', (event, height) => {
+  ipcMain.on("phantom-resize", (event, height) => {
     if (!event) {
     }
     if (phantomWindow) {
-      const bounds = phantomWindow.getBounds()
-      phantomWindow.setBounds({ width: bounds.width, height: height, x: bounds.x, y: bounds.y })
+      const bounds = phantomWindow.getBounds();
+      phantomWindow.setBounds({
+        width: bounds.width,
+        height: height,
+        x: bounds.x,
+        y: bounds.y,
+      });
     }
-  })
+  });
 
-  ipcMain.on('phantom-execute-stream', async (event, promptText) => {
-    if (!event) return
+  ipcMain.on("phantom-execute-stream", async (event, promptText) => {
+    if (!event) return;
     try {
-      let apiKey = ''
-      const secureConfigPath = path.join(app.getPath('userData'), 'jarvis_secure_vault.json')
+      let apiKey = "";
+      const secureConfigPath = path.join(
+        app.getPath("userData"),
+        "jarvis_secure_vault.json",
+      );
 
       if (fsSync.existsSync(secureConfigPath)) {
         try {
-          const data = JSON.parse(fsSync.readFileSync(secureConfigPath, 'utf8'))
+          const data = JSON.parse(
+            fsSync.readFileSync(secureConfigPath, "utf8"),
+          );
           if (safeStorage.isEncryptionAvailable()) {
-            apiKey = safeStorage.decryptString(Buffer.from(data.gemini, 'base64'))
+            apiKey = safeStorage.decryptString(
+              Buffer.from(data.gemini, "base64"),
+            );
           } else {
-            apiKey = Buffer.from(data.gemini, 'base64').toString('utf8')
+            apiKey = Buffer.from(data.gemini, "base64").toString("utf8");
           }
-        } catch (e) {
-        }
+        } catch (e) {}
       }
 
-      if (!apiKey || apiKey.trim() === '') {
+      if (!apiKey || apiKey.trim() === "") {
         if (phantomWindow) {
           phantomWindow.webContents.send(
-            'phantom-error',
-            'CRITICAL: Missing Gemini API Key.\nPlease launch the main JARVIS Dashboard and update your Command Center Vault.'
-          )
+            "phantom-error",
+            "CRITICAL: Missing Gemini API Key.\nPlease launch the main JARVIS Dashboard and update your Command Center Vault.",
+          );
         }
-        return
+        return;
       }
 
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:streamGenerateContent?alt=sse&key=${apiKey}`,
         {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             contents: [
               {
                 parts: [
                   {
-                    text: `You are Phantom, an inline code generator. Output ONLY the raw text or code requested. NO markdown formatting blocks like \`\`\`python. NO conversational text. Just the exact string.\n\nRequest: ${promptText}`
-                  }
-                ]
-              }
-            ]
-          })
-        }
-      )
+                    text: `You are Phantom, an inline code generator. Output ONLY the raw text or code requested. NO markdown formatting blocks like \`\`\`python. NO conversational text. Just the exact string.\n\nRequest: ${promptText}`,
+                  },
+                ],
+              },
+            ],
+          }),
+        },
+      );
 
-      if (!response.body) throw new Error('ReadableStream not supported.')
+      if (!response.body) throw new Error("ReadableStream not supported.");
 
-      const reader = response.body.getReader()
-      const decoder = new TextDecoder('utf-8')
-      let fullGeneratedText = ''
-      let buffer = ''
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let fullGeneratedText = "";
+      let buffer = "";
 
       while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
+        const { done, value } = await reader.read();
+        if (done) break;
 
-        buffer += decoder.decode(value, { stream: true })
+        buffer += decoder.decode(value, { stream: true });
 
-        const lines = buffer.split('\n')
-        buffer = lines.pop() || ''
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
 
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const dataStr = line.slice(6)
-            if (dataStr === '[DONE]') continue
+          if (line.startsWith("data: ")) {
+            const dataStr = line.slice(6);
+            if (dataStr === "[DONE]") continue;
 
             try {
-              const parsed = JSON.parse(dataStr)
-              const textChunk = parsed.candidates?.[0]?.content?.parts?.[0]?.text || ''
+              const parsed = JSON.parse(dataStr);
+              const textChunk =
+                parsed.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
               if (textChunk) {
-                fullGeneratedText += textChunk
+                fullGeneratedText += textChunk;
                 if (phantomWindow) {
-                  phantomWindow.webContents.send('phantom-stream-chunk', textChunk)
+                  phantomWindow.webContents.send(
+                    "phantom-stream-chunk",
+                    textChunk,
+                  );
                 }
               }
-            } catch (e) {
-            }
+            } catch (e) {}
           }
         }
       }
 
+      await sleep(400);
+      if (phantomWindow) phantomWindow.close();
 
-      await sleep(400)
-      if (phantomWindow) phantomWindow.close()
+      await sleep(150);
 
-      await sleep(150)
+      const originalClipboard = clipboard.readText();
 
-      const originalClipboard = clipboard.readText()
+      clipboard.writeText(fullGeneratedText);
 
-      clipboard.writeText(fullGeneratedText)
+      const isMac = process.platform === "darwin";
+      const modifier = isMac ? Key.LeftSuper : Key.LeftControl;
 
-      const isMac = process.platform === 'darwin'
-      const modifier = isMac ? Key.LeftSuper : Key.LeftControl
-
-      keyboard.config.autoDelayMs = 10
-      await keyboard.pressKey(modifier, Key.V)
-      await keyboard.releaseKey(Key.V, modifier)
+      keyboard.config.autoDelayMs = 10;
+      await keyboard.pressKey(modifier, Key.V);
+      await keyboard.releaseKey(Key.V, modifier);
 
       setTimeout(() => {
-        clipboard.writeText(originalClipboard)
-      }, 500)
+        clipboard.writeText(originalClipboard);
+      }, 500);
     } catch (error) {
       if (phantomWindow) {
-        phantomWindow.webContents.send('phantom-error', `Execution Failed: ${String(error)}`)
+        phantomWindow.webContents.send(
+          "phantom-error",
+          `Execution Failed: ${String(error)}`,
+        );
       }
     }
-  })
+  });
 }
-

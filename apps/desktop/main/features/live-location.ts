@@ -1,34 +1,36 @@
-import { IpcMain } from 'electron'
-import { exec } from 'child_process'
+import { IpcMain } from "electron";
+import { exec } from "child_process";
 
 export default function registerLocationHandlers(ipcMain: IpcMain) {
-  ipcMain.removeHandler('get-live-location')
+  ipcMain.removeHandler("get-live-location");
 
   const runPowerShell = (cmd: string): Promise<string> => {
     return new Promise((resolve) => {
-      exec(`powershell -Command "${cmd.replace(/"/g, '\\"')}"`, (error, stdout) => {
-        if (error) {
-          return resolve('')
-        }
-        resolve(stdout ? stdout.trim() : '')
-      })
-    })
-  }
+      exec(
+        `powershell -Command "${cmd.replace(/"/g, '\\"')}"`,
+        (error, stdout) => {
+          if (error) {
+            return resolve("");
+          }
+          resolve(stdout ? stdout.trim() : "");
+        },
+      );
+    });
+  };
 
-  ipcMain.handle('get-live-location', async () => {
+  ipcMain.handle("get-live-location", async () => {
     try {
+      const psCommand = `Add-Type -AssemblyName System.Device; $w = New-Object System.Device.Location.GeoCoordinateWatcher; $w.Start(); $t = 0; while($w.Position.Location.IsUnknown -and $t -lt 15) { Start-Sleep -Milliseconds 300; $t++ }; if(!$w.Position.Location.IsUnknown) { Write-Output "$($w.Position.Location.Latitude),$($w.Position.Location.Longitude)" }`;
 
-      const psCommand = `Add-Type -AssemblyName System.Device; $w = New-Object System.Device.Location.GeoCoordinateWatcher; $w.Start(); $t = 0; while($w.Position.Location.IsUnknown -and $t -lt 15) { Start-Sleep -Milliseconds 300; $t++ }; if(!$w.Position.Location.IsUnknown) { Write-Output "$($w.Position.Location.Latitude),$($w.Position.Location.Longitude)" }`
+      const osLocation = await runPowerShell(psCommand);
 
-      const osLocation = await runPowerShell(psCommand)
-
-      if (osLocation && osLocation.includes(',')) {
-        const [lat, lon] = osLocation.split(',')
+      if (osLocation && osLocation.includes(",")) {
+        const [lat, lon] = osLocation.split(",");
 
         const geoRes = await fetch(
-          `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`
-        )
-        const geoData = await geoRes.json()
+          `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`,
+        );
+        const geoData = await geoRes.json();
 
         return {
           city: geoData.city || geoData.locality,
@@ -37,16 +39,14 @@ export default function registerLocationHandlers(ipcMain: IpcMain) {
           lat: parseFloat(lat),
           lon: parseFloat(lon),
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          fullString: `${geoData.city || geoData.locality}, ${geoData.principalSubdivision}, ${geoData.countryName}`
-        }
+          fullString: `${geoData.city || geoData.locality}, ${geoData.principalSubdivision}, ${geoData.countryName}`,
+        };
       }
 
-      
+      const ipRes = await fetch("http://ip-api.com/json/");
+      const ipData = await ipRes.json();
 
-      const ipRes = await fetch('http://ip-api.com/json/')
-      const ipData = await ipRes.json()
-
-      if (ipData.status === 'success') {
+      if (ipData.status === "success") {
         return {
           city: ipData.city,
           region: ipData.regionName,
@@ -54,13 +54,13 @@ export default function registerLocationHandlers(ipcMain: IpcMain) {
           lat: ipData.lat,
           lon: ipData.lon,
           timezone: ipData.timezone,
-          fullString: `${ipData.city}, ${ipData.regionName}, ${ipData.country}`
-        }
+          fullString: `${ipData.city}, ${ipData.regionName}, ${ipData.country}`,
+        };
       }
 
-      return null
+      return null;
     } catch (error) {
-      return null
+      return null;
     }
-  })
+  });
 }

@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
-import { motion } from 'framer-motion'
-import { FaAndroid } from 'react-icons/fa6'
+import { useState, useEffect, useRef } from "react";
+import { motion } from "framer-motion";
+import { FaAndroid } from "react-icons/fa6";
 import {
   RiLinkM,
   RiWifiLine,
@@ -18,158 +18,173 @@ import {
   RiAddLine,
   RiTerminalLine,
   RiFileCopyLine,
-  RiCheckLine
-} from 'react-icons/ri'
+  RiCheckLine,
+} from "react-icons/ri";
 
 const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
-  const [ip, setIp] = useState(() => localStorage.getItem('jarvis_adb_ip') || '')
-  const [port, setPort] = useState(() => localStorage.getItem('jarvis_adb_port') || '5555')
-  const [status, setStatus] = useState<'idle' | 'connecting' | 'connected'>('idle')
-  const [uiMode, setUiMode] = useState<'history' | 'manual'>('history')
-  const [errorMsg, setErrorMsg] = useState('')
-  const [deviceHistory, setDeviceHistory] = useState<any[]>([])
-  const [copied, setCopied] = useState(false) 
+  const [ip, setIp] = useState(
+    () => localStorage.getItem("jarvis_adb_ip") || "",
+  );
+  const [port, setPort] = useState(
+    () => localStorage.getItem("jarvis_adb_port") || "5555",
+  );
+  const [status, setStatus] = useState<"idle" | "connecting" | "connected">(
+    "idle",
+  );
+  const [uiMode, setUiMode] = useState<"history" | "manual">("history");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [deviceHistory, setDeviceHistory] = useState<any[]>([]);
+  const [copied, setCopied] = useState(false);
 
-  const screenRef = useRef<HTMLImageElement>(null)
-  const isStreaming = useRef(false)
-  const knownNotifs = useRef<string[]>([])
-  const hasAutoConnected = useRef(false)
+  const screenRef = useRef<HTMLImageElement>(null);
+  const isStreaming = useRef(false);
+  const knownNotifs = useRef<string[]>([]);
+  const hasAutoConnected = useRef(false);
 
   const [telemetry, setTelemetry] = useState({
-    model: 'UNKNOWN DEVICE',
-    os: 'ANDROID --',
-    battery: { level: 0, isCharging: false, temp: '0.0' },
-    storage: { used: '0 GB', total: '0 GB TOTAL', percent: 0 }
-  })
+    model: "UNKNOWN DEVICE",
+    os: "ANDROID --",
+    battery: { level: 0, isCharging: false, temp: "0.0" },
+    storage: { used: "0 GB", total: "0 GB TOTAL", percent: 0 },
+  });
 
   useEffect(() => {
-    window.electron.ipcRenderer.invoke('adb-get-history').then((data) => {
-      setDeviceHistory(data)
+    window.electron.ipcRenderer.invoke("adb-get-history").then((data) => {
+      setDeviceHistory(data);
 
       if (data.length > 0 && !hasAutoConnected.current) {
-        hasAutoConnected.current = true
+        hasAutoConnected.current = true;
 
-        const lastDevice = data[data.length - 1]
+        const lastDevice = data[data.length - 1];
 
         if (lastDevice && lastDevice.ip) {
-          setIp(lastDevice.ip)
-          setPort(lastDevice.port)
-          connectToDevice(lastDevice.ip, lastDevice.port)
+          setIp(lastDevice.ip);
+          setPort(lastDevice.port);
+          connectToDevice(lastDevice.ip, lastDevice.port);
         }
       }
-    })
-  }, [])
+    });
+  }, []);
 
   const checkNotifications = async () => {
     try {
-      const res = await window.electron.ipcRenderer.invoke('adb-get-notifications')
+      const res = await window.electron.ipcRenderer.invoke(
+        "adb-get-notifications",
+      );
       if (res.success && res.data) {
-        const currentNotifs: string[] = res.data
+        const currentNotifs: string[] = res.data;
 
         if (knownNotifs.current.length === 0) {
-          knownNotifs.current = currentNotifs
-          return
+          knownNotifs.current = currentNotifs;
+          return;
         }
 
-        const newNotifs = currentNotifs.filter((n) => !knownNotifs.current.includes(n))
+        const newNotifs = currentNotifs.filter(
+          (n) => !knownNotifs.current.includes(n),
+        );
 
         if (newNotifs.length > 0) {
           window.dispatchEvent(
-            new CustomEvent('ai-force-speak', {
-              detail: `System Alert: The user just received a new mobile notification. Announce it out loud briefly: "${newNotifs[0]}"`
-            })
-          )
-          knownNotifs.current = currentNotifs
+            new CustomEvent("ai-force-speak", {
+              detail: `System Alert: The user just received a new mobile notification. Announce it out loud briefly: "${newNotifs[0]}"`,
+            }),
+          );
+          knownNotifs.current = currentNotifs;
         }
       }
     } catch (e) {}
-  }
+  };
 
   const connectToDevice = async (targetIp: string, targetPort: string) => {
-    if (!targetIp || !targetPort) return setErrorMsg('IP and Port are required.')
-    setStatus('connecting')
-    setErrorMsg('')
+    if (!targetIp || !targetPort)
+      return setErrorMsg("IP and Port are required.");
+    setStatus("connecting");
+    setErrorMsg("");
 
     try {
-      const res = await window.electron.ipcRenderer.invoke('adb-connect', {
+      const res = await window.electron.ipcRenderer.invoke("adb-connect", {
         ip: targetIp,
-        port: targetPort
-      })
+        port: targetPort,
+      });
       if (res.success) {
-        setStatus('connected')
-        isStreaming.current = true
-        fetchTelemetry()
-        startScreenStream()
+        setStatus("connected");
+        isStreaming.current = true;
+        fetchTelemetry();
+        startScreenStream();
       } else {
-        setStatus('idle')
-        setErrorMsg('Connection refused. Ensure TCP/IP daemon is running (adb tcpip 5555).')
+        setStatus("idle");
+        setErrorMsg(
+          "Connection refused. Ensure TCP/IP daemon is running (adb tcpip 5555).",
+        );
       }
     } catch (e) {
-      setStatus('idle')
-      setErrorMsg('Electron IPC Error.')
+      setStatus("idle");
+      setErrorMsg("Electron IPC Error.");
     }
-  }
+  };
 
   const handleManualConnect = () => {
-    localStorage.setItem('jarvis_adb_ip', ip)
-    localStorage.setItem('jarvis_adb_port', port)
-    connectToDevice(ip, port)
-  }
+    localStorage.setItem("jarvis_adb_ip", ip);
+    localStorage.setItem("jarvis_adb_port", port);
+    connectToDevice(ip, port);
+  };
 
   const handleDisconnect = async () => {
-    isStreaming.current = false
+    isStreaming.current = false;
     try {
-      await window.electron.ipcRenderer.invoke('adb-disconnect')
+      await window.electron.ipcRenderer.invoke("adb-disconnect");
     } catch (e) {}
-    setStatus('idle')
-    if (screenRef.current) screenRef.current.src = ''
-  }
+    setStatus("idle");
+    if (screenRef.current) screenRef.current.src = "";
+  };
 
-  const executeQuickCommand = async (action: 'camera' | 'wake' | 'lock' | 'home') => {
+  const executeQuickCommand = async (
+    action: "camera" | "wake" | "lock" | "home",
+  ) => {
     try {
-      await window.electron.ipcRenderer.invoke('adb-quick-action', { action })
+      await window.electron.ipcRenderer.invoke("adb-quick-action", { action });
     } catch (e) {}
-  }
+  };
 
   const fetchTelemetry = async () => {
     try {
-      const res = await window.electron.ipcRenderer.invoke('adb-telemetry')
-      if (res.success) setTelemetry(res.data)
+      const res = await window.electron.ipcRenderer.invoke("adb-telemetry");
+      if (res.success) setTelemetry(res.data);
     } catch (e) {}
-  }
+  };
 
   const startScreenStream = async () => {
-    if (!isStreaming.current) return
+    if (!isStreaming.current) return;
     try {
-      const res = await window.electron.ipcRenderer.invoke('adb-screenshot')
+      const res = await window.electron.ipcRenderer.invoke("adb-screenshot");
       if (res.success && res.image && screenRef.current) {
-        screenRef.current.src = res.image
+        screenRef.current.src = res.image;
       }
     } catch (e) {}
 
     if (isStreaming.current) {
-      requestAnimationFrame(startScreenStream)
+      requestAnimationFrame(startScreenStream);
     }
-  }
+  };
 
   const handleCopyCommand = () => {
-    navigator.clipboard.writeText('adb tcpip 5555')
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
+    navigator.clipboard.writeText("adb tcpip 5555");
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   useEffect(() => {
-    let interval: any
-    if (status === 'connected') {
+    let interval: any;
+    if (status === "connected") {
       interval = setInterval(() => {
-        fetchTelemetry()
-        checkNotifications()
-      }, 3000)
+        fetchTelemetry();
+        checkNotifications();
+      }, 3000);
     }
-    return () => clearInterval(interval)
-  }, [status])
+    return () => clearInterval(interval);
+  }, [status]);
 
-  if (status !== 'connected' && uiMode === 'history') {
+  if (status !== "connected" && uiMode === "history") {
     return (
       <div className="flex-1 flex flex-col items-center justify-start pt-16 p-10 animate-in fade-in duration-300 bg-[#050505] min-h-screen text-emerald-50 relative overflow-y-auto scrollbar-small pb-24">
         <div className="w-full max-w-6xl flex flex-col items-center">
@@ -208,7 +223,9 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
                     <RiWifiLine /> {dev.ip}:{dev.port}
                   </div>
                   <div className="mt-8 px-6 py-2 border border-zinc-700 group-hover:border-emerald-500 bg-transparent group-hover:bg-emerald-500 text-zinc-500 group-hover:text-black font-bold text-[10px] tracking-widest rounded-full transition-colors z-10">
-                    {status === 'connecting' && ip === dev.ip ? 'LINKING...' : 'UPLINK'}
+                    {status === "connecting" && ip === dev.ip
+                      ? "LINKING..."
+                      : "UPLINK"}
                   </div>
                 </div>
               </motion.button>
@@ -217,7 +234,7 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => setUiMode('manual')}
+              onClick={() => setUiMode("manual")}
               className="w-55 h-110 bg-transparent border-4 border-dashed border-zinc-800 hover:border-emerald-500/50 rounded-[3rem] flex flex-col items-center justify-center group transition-colors duration-500 hover:bg-emerald-500/5 cursor-pointer"
             >
               <div className="w-16 h-16 rounded-full bg-zinc-900 group-hover:bg-emerald-500 flex items-center justify-center text-zinc-500 group-hover:text-black transition-colors mb-4">
@@ -230,10 +247,10 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
-  if (status !== 'connected' && uiMode === 'manual') {
+  if (status !== "connected" && uiMode === "manual") {
     return (
       <div className="flex-1 flex flex-col lg:flex-row items-start justify-center gap-8 p-6 md:p-12 animate-in fade-in duration-300 bg-[#050505] min-h-dvh overflow-y-auto text-emerald-50 pb-24">
         <div className="w-full lg:w-1/3 max-w-md flex flex-col gap-6 shrink-0">
@@ -243,8 +260,12 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
                 <FaAndroid className="text-emerald-400 text-2xl" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-white tracking-wide">Device Uplink</h2>
-                <p className="text-[10px] text-emerald-400/70 font-mono">TCP/IP CONFIGURATION</p>
+                <h2 className="text-lg font-bold text-white tracking-wide">
+                  Device Uplink
+                </h2>
+                <p className="text-[10px] text-emerald-400/70 font-mono">
+                  TCP/IP CONFIGURATION
+                </p>
               </div>
             </div>
 
@@ -252,7 +273,7 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setUiMode('history')}
+                onClick={() => setUiMode("history")}
                 className="text-[10px] font-bold tracking-widest text-emerald-500 hover:text-emerald-300 hover:bg-emerald-500/10 uppercase px-3 py-1.5 border border-emerald-500/30 rounded-lg transition-colors shrink-0 ml-2 cursor-pointer"
               >
                 ARCHIVE
@@ -261,7 +282,7 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
           </div>
 
           <div
-            className={`${glassPanel || 'bg-zinc-950'} p-8 border border-emerald-900/40 rounded-2xl shadow-lg flex flex-col gap-6`}
+            className={`${glassPanel || "bg-zinc-950"} p-8 border border-emerald-900/40 rounded-2xl shadow-lg flex flex-col gap-6`}
           >
             {errorMsg && (
               <div className="p-4 bg-red-500/10 border border-red-500/30 text-red-400 text-xs rounded-lg font-mono leading-relaxed">
@@ -305,10 +326,12 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleManualConnect}
-              disabled={status === 'connecting'}
+              disabled={status === "connecting"}
               className="w-full mt-4 py-5 bg-emerald-950 border border-emerald-400/50 hover:bg-emerald-400 text-emerald-400 hover:text-black font-bold rounded-xl tracking-widest transition-colors duration-300 uppercase text-sm cursor-pointer"
             >
-              {status === 'connecting' ? 'INITIALIZING LINK...' : 'ESTABLISH CONNECTION'}
+              {status === "connecting"
+                ? "INITIALIZING LINK..."
+                : "ESTABLISH CONNECTION"}
             </motion.button>
           </div>
         </div>
@@ -327,8 +350,9 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
             </div>
 
             <p className="text-sm text-zinc-400 font-mono mb-10 leading-relaxed relative z-10 pr-4">
-              Wireless ADB requires the device's TCP/IP daemon to be initialized via USB first.
-              Follow these steps to prepare your device for remote uplink.
+              Wireless ADB requires the device's TCP/IP daemon to be initialized
+              via USB first. Follow these steps to prepare your device for
+              remote uplink.
             </p>
 
             <div className="space-y-8 relative z-10">
@@ -344,10 +368,12 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
                     ENABLE USB DEBUGGING
                   </h4>
                   <p className="text-xs font-mono text-zinc-500 leading-relaxed">
-                    Go to{' '}
-                    <span className="text-emerald-400/70">Settings &gt; Developer Options</span> on
-                    your Android and enable USB Debugging. (If hidden, tap "Build Number" 7 times in
-                    About Phone).
+                    Go to{" "}
+                    <span className="text-emerald-400/70">
+                      Settings &gt; Developer Options
+                    </span>{" "}
+                    on your Android and enable USB Debugging. (If hidden, tap
+                    "Build Number" 7 times in About Phone).
                   </p>
                 </div>
               </div>
@@ -364,8 +390,8 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
                     PHYSICAL LINK
                   </h4>
                   <p className="text-xs font-mono text-zinc-500 leading-relaxed">
-                    Connect the device to this PC via USB cable. Accept the "Allow USB debugging"
-                    prompt on your phone's screen.
+                    Connect the device to this PC via USB cable. Accept the
+                    "Allow USB debugging" prompt on your phone's screen.
                   </p>
                 </div>
               </div>
@@ -382,8 +408,8 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
                     START THE DAEMON
                   </h4>
                   <p className="text-xs font-mono text-zinc-500 leading-relaxed mb-3">
-                    Open your PC's Command Prompt / Terminal and execute the following command to
-                    open the port:
+                    Open your PC's Command Prompt / Terminal and execute the
+                    following command to open the port:
                   </p>
 
                   <div className="relative group w-full">
@@ -418,8 +444,9 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
                     SEVER CABLE & CONNECT
                   </h4>
                   <p className="text-xs font-mono text-zinc-500 leading-relaxed">
-                    Disconnect the USB cable. Find your phone's Wi-Fi IP address, enter it in the
-                    form to the left, and establish the connection.
+                    Disconnect the USB cable. Find your phone's Wi-Fi IP
+                    address, enter it in the form to the left, and establish the
+                    connection.
                   </p>
                 </div>
               </div>
@@ -427,7 +454,7 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -449,7 +476,9 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
 
         <div className="flex justify-between text-[10px] font-mono text-cyan-500 border-b border-white/5 pb-4 mb-4">
           <span>UPTIME: LIVE</span>
-          <span className="text-orange-500">TEMP: {telemetry.battery.temp}°C</span>
+          <span className="text-orange-500">
+            TEMP: {telemetry.battery.temp}°C
+          </span>
         </div>
 
         <h3 className="text-fuchsia-500 font-bold tracking-widest text-sm text-center my-6 drop-shadow-[0_0_10px_rgba(217,70,239,0.5)]">
@@ -459,22 +488,30 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
         <div className="flex flex-col gap-4">
           <div className="bg-[#111] border border-white/5 rounded-2xl p-5 hover:border-purple-500/30 transition-all">
             <div className="flex justify-between items-center mb-3">
-              <span className="text-[10px] font-bold text-zinc-500 tracking-widest">NETWORK</span>
+              <span className="text-[10px] font-bold text-zinc-500 tracking-widest">
+                NETWORK
+              </span>
               <RiSignalWifi3Line className="text-purple-500" />
             </div>
             <h4 className="text-2xl font-black text-white">ACTIVE</h4>
-            <span className="text-[10px] font-mono text-zinc-500">TCP/IP BRIDGE</span>
+            <span className="text-[10px] font-mono text-zinc-500">
+              TCP/IP BRIDGE
+            </span>
           </div>
 
           <div className="bg-[#111] border border-white/5 rounded-2xl p-5 hover:border-purple-500/30 transition-all">
             <div className="flex justify-between items-center mb-3">
-              <span className="text-[10px] font-bold text-zinc-500 tracking-widest">BATTERY</span>
+              <span className="text-[10px] font-bold text-zinc-500 tracking-widest">
+                BATTERY
+              </span>
               <RiBattery2ChargeLine className="text-green-500" />
             </div>
             <div className="flex justify-between items-end mb-2">
-              <h4 className="text-3xl font-black text-white">{telemetry.battery.level}%</h4>
+              <h4 className="text-3xl font-black text-white">
+                {telemetry.battery.level}%
+              </h4>
               <span className="text-[10px] font-mono text-green-500">
-                {telemetry.battery.isCharging ? 'CHARGING' : 'DISCHARGING'}
+                {telemetry.battery.isCharging ? "CHARGING" : "DISCHARGING"}
               </span>
             </div>
             <div className="w-full bg-zinc-800 rounded-full h-1.5 overflow-hidden">
@@ -487,12 +524,18 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
 
           <div className="bg-[#111] border border-white/5 rounded-2xl p-5 hover:border-purple-500/30 transition-all">
             <div className="flex justify-between items-center mb-3">
-              <span className="text-[10px] font-bold text-zinc-500 tracking-widest">STORAGE</span>
+              <span className="text-[10px] font-bold text-zinc-500 tracking-widest">
+                STORAGE
+              </span>
               <RiDatabase2Line className="text-orange-500" />
             </div>
             <div className="flex justify-between items-end mb-2">
-              <h4 className="text-3xl font-black text-white">{telemetry.storage.used}</h4>
-              <span className="text-[10px] font-mono text-zinc-500">{telemetry.storage.total}</span>
+              <h4 className="text-3xl font-black text-white">
+                {telemetry.storage.used}
+              </h4>
+              <span className="text-[10px] font-mono text-zinc-500">
+                {telemetry.storage.total}
+              </span>
             </div>
             <div className="w-full bg-zinc-800 rounded-full h-1.5 overflow-hidden">
               <div
@@ -535,57 +578,65 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => executeQuickCommand('camera')}
+              onClick={() => executeQuickCommand("camera")}
               className="group flex flex-col items-center justify-center gap-3 p-6 bg-black/50 border border-white/5 hover:border-purple-500/50 hover:bg-purple-500/10 rounded-2xl transition-colors cursor-pointer"
             >
               <RiCameraLensLine
                 size={28}
                 className="text-zinc-500 group-hover:text-purple-400 transition-colors"
               />
-              <span className="text-[10px] font-bold text-white tracking-widest">CAMERA</span>
+              <span className="text-[10px] font-bold text-white tracking-widest">
+                CAMERA
+              </span>
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => executeQuickCommand('lock')}
+              onClick={() => executeQuickCommand("lock")}
               className="group flex flex-col items-center justify-center gap-3 p-6 bg-black/50 border border-white/5 hover:border-purple-500/50 hover:bg-purple-500/10 rounded-2xl transition-colors cursor-pointer"
             >
               <RiLockPasswordLine
                 size={28}
                 className="text-zinc-500 group-hover:text-purple-400 transition-colors"
               />
-              <span className="text-[10px] font-bold text-white tracking-widest">LOCK</span>
+              <span className="text-[10px] font-bold text-white tracking-widest">
+                LOCK
+              </span>
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => executeQuickCommand('wake')}
+              onClick={() => executeQuickCommand("wake")}
               className="group flex flex-col items-center justify-center gap-3 p-6 bg-black/50 border border-white/5 hover:border-purple-500/50 hover:bg-purple-500/10 rounded-2xl transition-colors cursor-pointer"
             >
               <RiSunLine
                 size={28}
                 className="text-zinc-500 group-hover:text-purple-400 transition-colors"
               />
-              <span className="text-[10px] font-bold text-white tracking-widest">WAKE</span>
+              <span className="text-[10px] font-bold text-white tracking-widest">
+                WAKE
+              </span>
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => executeQuickCommand('home')}
+              onClick={() => executeQuickCommand("home")}
               className="group flex flex-col items-center justify-center gap-3 p-6 bg-black/50 border border-white/5 hover:border-purple-500/50 hover:bg-purple-500/10 rounded-2xl transition-colors cursor-pointer"
             >
               <RiHome5Line
                 size={28}
                 className="text-zinc-500 group-hover:text-purple-400 transition-colors"
               />
-              <span className="text-[10px] font-bold text-white tracking-widest">HOME</span>
+              <span className="text-[10px] font-bold text-white tracking-widest">
+                HOME
+              </span>
             </motion.button>
           </div>
 
           <div className="mb-6 p-4 bg-purple-500/5 border border-purple-500/20 rounded-xl">
             <p className="text-[10px] text-purple-400 font-mono leading-relaxed text-center">
-              JARVIS is listening via the primary neural audio interface. Voice commands for app
-              execution are online.
+              JARVIS is listening via the primary neural audio interface. Voice
+              commands for app execution are online.
             </p>
           </div>
 
@@ -600,7 +651,7 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default PhoneView
+export default PhoneView;

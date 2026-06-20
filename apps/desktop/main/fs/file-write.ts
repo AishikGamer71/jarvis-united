@@ -1,19 +1,20 @@
-import { IpcMain, app } from 'electron'
-import fs from 'fs/promises'
-import path from 'path'
+import { IpcMain, app } from "electron";
+import fs from "fs/promises";
+import path from "path";
 
 export default function registerFileWrite(ipcMain: IpcMain) {
-  ipcMain.handle('write-file', async (_event, { fileName, content }) => {
+  ipcMain.handle("write-file", async (_event, { fileName, content }) => {
     try {
-      const isAbsolutePath = fileName.includes('/') || fileName.includes('\\')
+      const isAbsolutePath = fileName.includes("/") || fileName.includes("\\");
 
-      const targetPath = isAbsolutePath ? fileName : path.join(app.getPath('desktop'), fileName)
+      const targetPath = isAbsolutePath
+        ? fileName
+        : path.join(app.getPath("desktop"), fileName);
 
-
-      await fs.writeFile(targetPath, content, 'utf-8')
-      return `Success. File saved to: ${targetPath}`
+      await fs.writeFile(targetPath, content, "utf-8");
+      return `Success. File saved to: ${targetPath}`;
     } catch (err) {
-      return `Error writing file: ${err}`
+      return `Error writing file: ${err}`;
     }
-  })
+  });
 }

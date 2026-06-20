@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   RiStickyNoteLine,
   RiDeleteBinLine,
@@ -10,14 +10,14 @@ import {
   RiAddLine,
   RiSave3Line,
   RiCloseLine,
-  RiEditLine 
-} from 'react-icons/ri'
+  RiEditLine,
+} from "react-icons/ri";
 
 interface Note {
-  filename: string
-  title: string
-  content: string
-  createdAt: Date
+  filename: string;
+  title: string;
+  content: string;
+  createdAt: Date;
 }
 
 const MarkdownComponents = {
@@ -33,88 +33,89 @@ const MarkdownComponents = {
       >
         {children}
       </code>
-    )
-  }
-}
+    );
+  },
+};
 
 const NotesView = ({ glassPanel }: { glassPanel?: string }) => {
-  const [notes, setNotes] = useState<Note[]>([])
-  const [selectedNote, setSelectedNote] = useState<Note | null>(null)
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
 
-  const [isEditorOpen, setIsEditorOpen] = useState(false)
-  const [newTitle, setNewTitle] = useState('')
-  const [newContent, setNewContent] = useState('')
-  const [editOriginalFilename, setEditOriginalFilename] = useState<string | null>(null)
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+  const [newContent, setNewContent] = useState("");
+  const [editOriginalFilename, setEditOriginalFilename] = useState<
+    string | null
+  >(null);
 
   const fetchNotes = async () => {
     try {
-      const data = await window.electron.ipcRenderer.invoke('get-notes')
-      setNotes(data)
-    } catch (e) {
-    }
-  }
+      const data = await window.electron.ipcRenderer.invoke("get-notes");
+      setNotes(data);
+    } catch (e) {}
+  };
 
   useEffect(() => {
-    fetchNotes()
-    const interval = setInterval(fetchNotes, 3000) 
-    return () => clearInterval(interval)
-  }, [])
-
+    fetchNotes();
+    const interval = setInterval(fetchNotes, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   const startCreating = () => {
-    setSelectedNote(null)
-    setEditOriginalFilename(null)
-    setNewTitle('')
-    setNewContent('')
-    setIsEditorOpen(true)
-  }
+    setSelectedNote(null);
+    setEditOriginalFilename(null);
+    setNewTitle("");
+    setNewContent("");
+    setIsEditorOpen(true);
+  };
 
   const startEditing = () => {
-    if (!selectedNote) return
+    if (!selectedNote) return;
 
-    setEditOriginalFilename(selectedNote.filename)
-    setNewTitle(selectedNote.title)
+    setEditOriginalFilename(selectedNote.filename);
+    setNewTitle(selectedNote.title);
 
-    const cleanContent = selectedNote.content.replace(/^# .+\n\n/, '')
-    setNewContent(cleanContent)
+    const cleanContent = selectedNote.content.replace(/^# .+\n\n/, "");
+    setNewContent(cleanContent);
 
-    setIsEditorOpen(true)
-  }
+    setIsEditorOpen(true);
+  };
 
   const cancelEditor = () => {
-    setIsEditorOpen(false)
-    setEditOriginalFilename(null)
-  }
+    setIsEditorOpen(false);
+    setEditOriginalFilename(null);
+  };
 
   const saveManualNote = async () => {
-    if (!newTitle.trim() || !newContent.trim()) return
+    if (!newTitle.trim() || !newContent.trim()) return;
 
-
-    await window.electron.ipcRenderer.invoke('save-note', {
+    await window.electron.ipcRenderer.invoke("save-note", {
       title: newTitle,
-      content: newContent
-    })
+      content: newContent,
+    });
 
-    setIsEditorOpen(false)
-    setEditOriginalFilename(null)
-    fetchNotes()
+    setIsEditorOpen(false);
+    setEditOriginalFilename(null);
+    fetchNotes();
 
     setTimeout(() => {
-      window.electron.ipcRenderer.invoke('get-notes').then((data: Note[]) => {
+      window.electron.ipcRenderer.invoke("get-notes").then((data: Note[]) => {
         const created = data.find((n) =>
-          n.title.toLowerCase().includes(newTitle.toLowerCase().replace(/ /g, '_'))
-        )
-        if (created) setSelectedNote(created)
-      })
-    }, 500)
-  }
+          n.title
+            .toLowerCase()
+            .includes(newTitle.toLowerCase().replace(/ /g, "_")),
+        );
+        if (created) setSelectedNote(created);
+      });
+    }, 500);
+  };
 
   const deleteNote = async (filename: string, e: React.MouseEvent) => {
-    e.stopPropagation()
-    await window.electron.ipcRenderer.invoke('delete-note', filename)
-    fetchNotes()
-    if (selectedNote?.filename === filename) setSelectedNote(null)
-  }
+    e.stopPropagation();
+    await window.electron.ipcRenderer.invoke("delete-note", filename);
+    fetchNotes();
+    if (selectedNote?.filename === filename) setSelectedNote(null);
+  };
 
   return (
     <div className="flex-1 bg-white/5 h-full grid grid-cols-12 gap-6 p-6 animate-in fade-in zoom-in duration-300">
@@ -122,11 +123,15 @@ const NotesView = ({ glassPanel }: { glassPanel?: string }) => {
         <div className="flex items-center justify-between pb-2 border-b border-white/10">
           <div className="flex items-center gap-2 text-zinc-100">
             <RiStickyNoteLine className="text-emerald-400" />
-            <span className="text-xs font-bold tracking-widest">MEMORY BANK</span>
+            <span className="text-xs font-bold tracking-widest">
+              MEMORY BANK
+            </span>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-[10px] text-zinc-500 font-mono mr-2">{notes.length} ITEMS</span>
+            <span className="text-[10px] text-zinc-500 font-mono mr-2">
+              {notes.length} ITEMS
+            </span>
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
@@ -150,18 +155,18 @@ const NotesView = ({ glassPanel }: { glassPanel?: string }) => {
               <div
                 key={note.filename}
                 onClick={() => {
-                  setIsEditorOpen(false)
-                  setSelectedNote(note)
+                  setIsEditorOpen(false);
+                  setSelectedNote(note);
                 }}
                 className={`group p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
                   selectedNote?.filename === note.filename && !isEditorOpen
-                    ? 'bg-emerald-500/10 border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.1)]'
-                    : 'bg-zinc-900/40 border-white/5 hover:bg-white/5 hover:border-white/10'
+                    ? "bg-emerald-500/10 border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.1)]"
+                    : "bg-zinc-900/40 border-white/5 hover:bg-white/5 hover:border-white/10"
                 }`}
               >
                 <div className="overflow-hidden">
                   <h3
-                    className={`text-xs font-bold truncate ${selectedNote?.filename === note.filename && !isEditorOpen ? 'text-emerald-100' : 'text-zinc-200'}`}
+                    className={`text-xs font-bold truncate ${selectedNote?.filename === note.filename && !isEditorOpen ? "text-emerald-100" : "text-zinc-200"}`}
                   >
                     {note.title.toUpperCase()}
                   </h3>
@@ -185,7 +190,7 @@ const NotesView = ({ glassPanel }: { glassPanel?: string }) => {
       </div>
 
       <div
-        className={`col-span-8 ${glassPanel || ''} bg-black/40 backdrop-blur-sm border border-white/5 rounded-2xl flex flex-col overflow-hidden relative`}
+        className={`col-span-8 ${glassPanel || ""} bg-black/40 backdrop-blur-sm border border-white/5 rounded-2xl flex flex-col overflow-hidden relative`}
       >
         {isEditorOpen ? (
           <div className="flex-1 flex flex-col p-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
@@ -225,7 +230,8 @@ const NotesView = ({ glassPanel }: { glassPanel?: string }) => {
                 disabled={!newTitle || !newContent}
                 className="flex items-center gap-2 px-6 py-2 bg-emerald-500 text-black font-bold text-xs rounded-lg hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
               >
-                <RiSave3Line /> {editOriginalFilename ? 'UPDATE MEMORY' : 'SAVE TO MEMORY'}
+                <RiSave3Line />{" "}
+                {editOriginalFilename ? "UPDATE MEMORY" : "SAVE TO MEMORY"}
               </motion.button>
             </div>
           </div>
@@ -234,7 +240,9 @@ const NotesView = ({ glassPanel }: { glassPanel?: string }) => {
             <div className="h-12 border-b border-white/5 flex items-center justify-between px-6 bg-white/5">
               <div className="flex items-center gap-2 text-zinc-300">
                 <RiMarkdownLine size={18} className="opacity-50" />
-                <span className="text-xs font-bold tracking-wider">{selectedNote.title}</span>
+                <span className="text-xs font-bold tracking-wider">
+                  {selectedNote.title}
+                </span>
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-[9px] font-mono text-zinc-400 bg-black/20 px-2 py-1 rounded">
@@ -254,7 +262,10 @@ const NotesView = ({ glassPanel }: { glassPanel?: string }) => {
 
             <div className="flex-1 overflow-y-auto p-8 scrollbar-small bg-zinc-950/30">
               <div className="prose prose-invert prose-sm max-w-none text-zinc-300">
-                <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={MarkdownComponents}
+                >
                   {selectedNote.content}
                 </ReactMarkdown>
               </div>
@@ -270,7 +281,7 @@ const NotesView = ({ glassPanel }: { glassPanel?: string }) => {
         )}
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default NotesView
+export default NotesView;

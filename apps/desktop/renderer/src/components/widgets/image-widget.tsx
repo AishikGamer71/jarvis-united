@@ -1,86 +1,86 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from "react";
 
 export default function ImageWidget() {
-  const [isVisible, setIsVisible] = useState(false)
-  const [imageSrc, setImageSrc] = useState('')
-  const [prompt, setPrompt] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [hasError, setHasError] = useState(false)
-  const [statusText, setStatusText] = useState('')
-  const [debugMsg, setDebugMsg] = useState('')
+  const [isVisible, setIsVisible] = useState(false);
+  const [imageSrc, setImageSrc] = useState("");
+  const [prompt, setPrompt] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [hasError, setHasError] = useState(false);
+  const [statusText, setStatusText] = useState("");
+  const [debugMsg, setDebugMsg] = useState("");
 
-  const abortControllerRef = useRef<AbortController | null>(null)
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     const handleEvent = (event: any) => {
-      const { url, prompt, loading, error, errorMessage } = event.detail
+      const { url, prompt, loading, error, errorMessage } = event.detail;
 
-      setPrompt(prompt)
+      setPrompt(prompt);
 
       if (loading) {
-        setIsVisible(true)
-        setLoading(true)
-        setHasError(false)
-        setImageSrc('')
-        setStatusText('JARVIS IS CRAFTING YOUR IMAGE...')
-        return
+        setIsVisible(true);
+        setLoading(true);
+        setHasError(false);
+        setImageSrc("");
+        setStatusText("JARVIS IS CRAFTING YOUR IMAGE...");
+        return;
       }
 
       if (error) {
-        setHasError(true)
-        setLoading(false)
-        setDebugMsg(errorMessage || 'API Error')
-        return
+        setHasError(true);
+        setLoading(false);
+        setDebugMsg(errorMessage || "API Error");
+        return;
       }
 
       if (url) {
-        downloadAndAutoSave(url, prompt)
+        downloadAndAutoSave(url, prompt);
       }
-    }
+    };
 
-    window.addEventListener('image-gen', handleEvent)
-    return () => window.removeEventListener('image-gen', handleEvent)
-  }, [])
+    window.addEventListener("image-gen", handleEvent);
+    return () => window.removeEventListener("image-gen", handleEvent);
+  }, []);
 
   const downloadAndAutoSave = async (url: string, currentPrompt: string) => {
-    if (abortControllerRef.current) abortControllerRef.current.abort()
-    const controller = new AbortController()
-    abortControllerRef.current = controller
+    if (abortControllerRef.current) abortControllerRef.current.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
     try {
-      setStatusText('DOWNLOADING & SAVING...')
+      setStatusText("DOWNLOADING & SAVING...");
 
-      const response = await fetch(url, { signal: controller.signal })
-      if (!response.ok) throw new Error(`Download Error: ${response.status}`)
+      const response = await fetch(url, { signal: controller.signal });
+      if (!response.ok) throw new Error(`Download Error: ${response.status}`);
 
-      const blob = await response.blob()
+      const blob = await response.blob();
 
-      const objectUrl = URL.createObjectURL(blob)
-      setImageSrc(objectUrl)
-      setLoading(false)
-      setHasError(false)
+      const objectUrl = URL.createObjectURL(blob);
+      setImageSrc(objectUrl);
+      setLoading(false);
+      setHasError(false);
 
-      const reader = new FileReader()
-      reader.readAsDataURL(blob)
+      const reader = new FileReader();
+      reader.readAsDataURL(blob);
       reader.onloadend = async () => {
-        const base64data = reader.result
+        const base64data = reader.result;
 
-        await window.electron.ipcRenderer.invoke('save-image-to-gallery', {
+        await window.electron.ipcRenderer.invoke("save-image-to-gallery", {
           title: currentPrompt,
-          base64Data: base64data
-        })
+          base64Data: base64data,
+        });
 
-        setStatusText('SAVED TO GALLERY ✔️')
-      }
+        setStatusText("SAVED TO GALLERY ✔️");
+      };
     } catch (err: any) {
-      if (err.name === 'AbortError') return
-      setHasError(true)
-      setDebugMsg('Failed to download/save image.')
-      setLoading(false)
+      if (err.name === "AbortError") return;
+      setHasError(true);
+      setDebugMsg("Failed to download/save image.");
+      setLoading(false);
     }
-  }
+  };
 
-  if (!isVisible) return null
+  if (!isVisible) return null;
 
   return (
     <div className="fixed inset-0 z-9050 flex items-center justify-center bg-black/90 backdrop-blur-md p-10 animate-in fade-in zoom-in duration-300">
@@ -134,5 +134,5 @@ export default function ImageWidget() {
         </div>
       </div>
     </div>
-  )
+  );
 }

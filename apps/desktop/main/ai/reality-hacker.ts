@@ -1,13 +1,13 @@
-import { IpcMain, BrowserWindow } from 'electron'
+import { IpcMain, BrowserWindow } from "electron";
 
-let hackerWindow: BrowserWindow | null = null
+let hackerWindow: BrowserWindow | null = null;
 
 export default function registerRealityHacker(ipcMain: IpcMain) {
-  ipcMain.removeHandler('hack-website')
-  ipcMain.handle('hack-website', async (_, { url, mode, customText }) => {
+  ipcMain.removeHandler("hack-website");
+  ipcMain.handle("hack-website", async (_, { url, mode, customText }) => {
     try {
       if (hackerWindow) {
-        hackerWindow.close()
+        hackerWindow.close();
       }
 
       hackerWindow = new BrowserWindow({
@@ -19,16 +19,16 @@ export default function registerRealityHacker(ipcMain: IpcMain) {
         webPreferences: {
           nodeIntegration: false,
           contextIsolation: true,
-          webSecurity: false
-        }
-      })
+          webSecurity: false,
+        },
+      });
 
-      await hackerWindow.loadURL(url)
-      hackerWindow.show()
+      await hackerWindow.loadURL(url);
+      hackerWindow.show();
 
-      await new Promise((resolve) => setTimeout(resolve, 3000))
+      await new Promise((resolve) => setTimeout(resolve, 3000));
 
-      if (mode === 'emerald_theme' || mode === 'both') {
+      if (mode === "emerald_theme" || mode === "both") {
         const themeScript = `
           const style = document.createElement('style');
           style.innerHTML = \`
@@ -96,11 +96,11 @@ export default function registerRealityHacker(ipcMain: IpcMain) {
           banner.id = 'jarvis-override-banner';
           banner.innerText = '⚠️ NETWORK COMPROMISED // JARVIS HAS ASSIMILATED THIS DOMAIN ⚠️';
           document.body.appendChild(banner);
-        `
-        await hackerWindow.webContents.executeJavaScript(themeScript)
+        `;
+        await hackerWindow.webContents.executeJavaScript(themeScript);
       }
 
-      if ((mode === 'rewrite' || mode === 'both') && customText) {
+      if ((mode === "rewrite" || mode === "both") && customText) {
         const rewriteScript = `
           const hostname = window.location.hostname;
           
@@ -228,14 +228,13 @@ export default function registerRealityHacker(ipcMain: IpcMain) {
               console.warn('Silent DOM Exception bypassed.');
             }
           }, 800);
-        `
-        await hackerWindow.webContents.executeJavaScript(rewriteScript)
+        `;
+        await hackerWindow.webContents.executeJavaScript(rewriteScript);
       }
 
-      return { success: true }
+      return { success: true };
     } catch (error: any) {
-      return { success: false, error: error.message }
+      return { success: false, error: error.message };
     }
-  })
+  });
 }
-

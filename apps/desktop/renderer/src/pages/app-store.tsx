@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { motion } from 'framer-motion'
+import { useState, useEffect, useRef, useCallback } from "react";
+import { motion } from "framer-motion";
 import {
   RiAppsLine,
   RiTerminalBoxLine,
@@ -7,38 +7,41 @@ import {
   RiCodeLine,
   RiSpotifyLine,
   RiDiscordLine,
-  RiGamepadLine
-} from 'react-icons/ri'
-import { getAllApps, AppItem } from '@renderer/services/system-info'
+  RiGamepadLine,
+} from "react-icons/ri";
+import { getAllApps, AppItem } from "@renderer/services/system-info";
 
 const SmartIcon = ({ name }: { name: string }) => {
-  if (!name) return <div className="w-10 h-10 bg-zinc-800 rounded-lg border border-white/5" />
+  if (!name)
+    return (
+      <div className="w-10 h-10 bg-zinc-800 rounded-lg border border-white/5" />
+    );
 
-  const lower = name.toLowerCase()
-  let icon = <RiTerminalBoxLine size={20} />
-  let color = 'text-zinc-400'
-  let bg = 'bg-zinc-800'
+  const lower = name.toLowerCase();
+  let icon = <RiTerminalBoxLine size={20} />;
+  let color = "text-zinc-400";
+  let bg = "bg-zinc-800";
 
-  if (lower.includes('chrome') || lower.includes('edge')) {
-    icon = <RiChromeLine size={20} />
-    color = 'text-blue-400'
-    bg = 'bg-blue-500/10'
-  } else if (lower.includes('code') || lower.includes('dev')) {
-    icon = <RiCodeLine size={20} />
-    color = 'text-cyan-400'
-    bg = 'bg-cyan-500/10'
-  } else if (lower.includes('spotify') || lower.includes('music')) {
-    icon = <RiSpotifyLine size={20} />
-    color = 'text-green-400'
-    bg = 'bg-green-500/10'
-  } else if (lower.includes('discord') || lower.includes('telegram')) {
-    icon = <RiDiscordLine size={20} />
-    color = 'text-indigo-400'
-    bg = 'bg-indigo-500/10'
-  } else if (lower.includes('game') || lower.includes('launcher')) {
-    icon = <RiGamepadLine size={20} />
-    color = 'text-purple-400'
-    bg = 'bg-purple-500/10'
+  if (lower.includes("chrome") || lower.includes("edge")) {
+    icon = <RiChromeLine size={20} />;
+    color = "text-blue-400";
+    bg = "bg-blue-500/10";
+  } else if (lower.includes("code") || lower.includes("dev")) {
+    icon = <RiCodeLine size={20} />;
+    color = "text-cyan-400";
+    bg = "bg-cyan-500/10";
+  } else if (lower.includes("spotify") || lower.includes("music")) {
+    icon = <RiSpotifyLine size={20} />;
+    color = "text-green-400";
+    bg = "bg-green-500/10";
+  } else if (lower.includes("discord") || lower.includes("telegram")) {
+    icon = <RiDiscordLine size={20} />;
+    color = "text-indigo-400";
+    bg = "bg-indigo-500/10";
+  } else if (lower.includes("game") || lower.includes("launcher")) {
+    icon = <RiGamepadLine size={20} />;
+    color = "text-purple-400";
+    bg = "bg-purple-500/10";
   }
 
   return (
@@ -47,14 +50,14 @@ const SmartIcon = ({ name }: { name: string }) => {
     >
       {icon}
     </div>
-  )
-}
+  );
+};
 
 const AppCard = ({ app }: { app: AppItem }) => (
   <motion.div
     whileHover={{ scale: 1.05 }}
     whileTap={{ scale: 0.95 }}
-    onClick={() => window.electron.ipcRenderer.invoke('open-app', app.name)}
+    onClick={() => window.electron.ipcRenderer.invoke("open-app", app.name)}
     className="bg-zinc-950/40 backdrop-blur-sm border border-white/5 rounded-xl p-4 flex items-center gap-4 hover:bg-white/10 hover:border-emerald-500/30 transition-colors cursor-pointer group"
   >
     <SmartIcon name={app.name} />
@@ -67,48 +70,48 @@ const AppCard = ({ app }: { app: AppItem }) => (
       </div>
     </div>
   </motion.div>
-)
+);
 
 const AppsView = () => {
-  const [allApps, setAllApps] = useState<AppItem[]>([])
-  const [visibleApps, setVisibleApps] = useState<AppItem[]>([])
-  const [page, setPage] = useState(1)
-  const [loading, setLoading] = useState(true)
+  const [allApps, setAllApps] = useState<AppItem[]>([]);
+  const [visibleApps, setVisibleApps] = useState<AppItem[]>([]);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
 
-  const observer = useRef<IntersectionObserver | null>(null)
+  const observer = useRef<IntersectionObserver | null>(null);
   const lastAppElementRef = useCallback(
     (node: HTMLDivElement) => {
-      if (loading) return
-      if (observer.current) observer.current.disconnect()
+      if (loading) return;
+      if (observer.current) observer.current.disconnect();
 
       observer.current = new IntersectionObserver((entries) => {
         if (entries[0].isIntersecting && visibleApps.length < allApps.length) {
-          setPage((prev) => prev + 1)
+          setPage((prev) => prev + 1);
         }
-      })
-      if (node) observer.current.observe(node)
+      });
+      if (node) observer.current.observe(node);
     },
-    [loading, visibleApps.length, allApps.length]
-  )
+    [loading, visibleApps.length, allApps.length],
+  );
 
   useEffect(() => {
     getAllApps().then((raw) => {
       const cleanData = (Array.isArray(raw) ? raw : []).filter(
-        (item) => item && typeof item === 'object' && item.name && item.id
-      )
+        (item) => item && typeof item === "object" && item.name && item.id,
+      );
 
-      setAllApps(cleanData)
-      setVisibleApps(cleanData.slice(0, 15))
-      setLoading(false)
-    })
-  }, [])
+      setAllApps(cleanData);
+      setVisibleApps(cleanData.slice(0, 15));
+      setLoading(false);
+    });
+  }, []);
 
   useEffect(() => {
     if (page > 1) {
-      const nextBatch = allApps.slice(0, page * 12 + 6)
-      setVisibleApps(nextBatch)
+      const nextBatch = allApps.slice(0, page * 12 + 6);
+      setVisibleApps(nextBatch);
     }
-  }, [page, allApps])
+  }, [page, allApps]);
 
   return (
     <div className="flex-1 bg-white/8 p-8 h-full flex flex-col animate-in fade-in zoom-in duration-300">
@@ -118,28 +121,32 @@ const AppsView = () => {
             <RiAppsLine className="text-emerald-400" size={20} />
           </div>
           <div>
-            <h2 className="text-sm font-bold text-zinc-200 tracking-widest">SYSTEM APPLICATIONS</h2>
-            <p className="text-[10px] text-zinc-500 font-mono">INDEXED SOFTWARE LIBRARY</p>
+            <h2 className="text-sm font-bold text-zinc-200 tracking-widest">
+              SYSTEM APPLICATIONS
+            </h2>
+            <p className="text-[10px] text-zinc-500 font-mono">
+              INDEXED SOFTWARE LIBRARY
+            </p>
           </div>
         </div>
         <div className="text-xs font-mono text-emerald-500 bg-emerald-500/5 px-3 py-1 rounded-full border border-emerald-500/20">
-          {loading ? 'INDEXING...' : `${allApps.length} FOUND`}
+          {loading ? "INDEXING..." : `${allApps.length} FOUND`}
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto pr-4 pb-4 scrollbar-small min-h-0">
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
           {visibleApps.map((app, index) => {
-            const safeKey = `${app.id}-${index}`
+            const safeKey = `${app.id}-${index}`;
 
             if (visibleApps.length === index + 1) {
               return (
                 <div ref={lastAppElementRef} key={safeKey}>
                   <AppCard app={app} />
                 </div>
-              )
+              );
             } else {
-              return <AppCard key={safeKey} app={app} />
+              return <AppCard key={safeKey} app={app} />;
             }
           })}
 
@@ -157,7 +164,7 @@ const AppsView = () => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default AppsView
+export default AppsView;

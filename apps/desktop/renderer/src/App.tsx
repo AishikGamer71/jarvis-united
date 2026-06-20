@@ -1,12 +1,11 @@
-import IndexRoot from "./IndexRoot"
+import IndexRoot from "./IndexRoot";
 
 const App = () => {
   return (
     <>
       <IndexRoot />
     </>
-  )
-}
+  );
+};
 
-export default App
-
+export default App;

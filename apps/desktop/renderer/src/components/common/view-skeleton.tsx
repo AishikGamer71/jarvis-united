@@ -1,4 +1,4 @@
-import { RiLoader4Line } from 'react-icons/ri'
+import { RiLoader4Line } from "react-icons/ri";
 
 const ViewSkeleton = () => {
   return (
@@ -24,11 +24,13 @@ const ViewSkeleton = () => {
 
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-emerald-500/50">
           <RiLoader4Line className="animate-spin text-4xl" />
-          <span className="text-[10px] tracking-[0.3em] font-mono">INITIALIZING MODULE...</span>
+          <span className="text-[10px] tracking-[0.3em] font-mono">
+            INITIALIZING MODULE...
+          </span>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default ViewSkeleton
+export default ViewSkeleton;

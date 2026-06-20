@@ -1,13 +1,13 @@
-import { create } from 'zustand'
-import { immer } from 'zustand/middleware/immer'
+import { create } from "zustand";
+import { immer } from "zustand/middleware/immer";
 
 interface AuthState {
-  accessToken: string | null
-  isAuthInitialized: boolean
+  accessToken: string | null;
+  isAuthInitialized: boolean;
 
-  setAccessToken: (token: string | null) => void
-  setIsAuthInitialized: (value: boolean) => void
-  logout: () => void
+  setAccessToken: (token: string | null) => void;
+  setIsAuthInitialized: (value: boolean) => void;
+  logout: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -17,18 +17,18 @@ export const useAuthStore = create<AuthState>()(
 
     setAccessToken: (token) =>
       set((state) => {
-        state.accessToken = token
+        state.accessToken = token;
       }),
 
     setIsAuthInitialized: (value) =>
       set((state) => {
-        state.isAuthInitialized = value
+        state.isAuthInitialized = value;
       }),
 
     logout: () =>
       set((state) => {
-        state.accessToken = null
-        state.isAuthInitialized = true
-      })
-  }))
-)
+        state.accessToken = null;
+        state.isAuthInitialized = true;
+      }),
+  })),
+);

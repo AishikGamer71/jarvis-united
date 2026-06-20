@@ -1,28 +1,28 @@
-import { useState, useEffect } from 'react'
-import { QRCodeSVG } from 'qrcode.react'
-import { X, ExternalLink, CloudLightning } from 'lucide-react'
+import { useState, useEffect } from "react";
+import { QRCodeSVG } from "qrcode.react";
+import { X, ExternalLink, CloudLightning } from "lucide-react";
 
 export default function WormholeWidget() {
-  const [isVisible, setIsVisible] = useState(false)
-  const [url, setUrl] = useState('')
+  const [isVisible, setIsVisible] = useState(false);
+  const [url, setUrl] = useState("");
 
   useEffect(() => {
     const handleOpen = (e: any) => {
-      setUrl(e.detail.url)
-      setIsVisible(true)
-    }
-    const handleClose = () => setIsVisible(false)
+      setUrl(e.detail.url);
+      setIsVisible(true);
+    };
+    const handleClose = () => setIsVisible(false);
 
-    window.addEventListener('wormhole-opened', handleOpen)
-    window.addEventListener('wormhole-closed', handleClose)
+    window.addEventListener("wormhole-opened", handleOpen);
+    window.addEventListener("wormhole-closed", handleClose);
 
     return () => {
-      window.removeEventListener('wormhole-opened', handleOpen)
-      window.removeEventListener('wormhole-closed', handleClose)
-    }
-  }, [])
+      window.removeEventListener("wormhole-opened", handleOpen);
+      window.removeEventListener("wormhole-closed", handleClose);
+    };
+  }, []);
 
-  if (!isVisible) return null
+  if (!isVisible) return null;
 
   return (
     <div className="absolute inset-0 z-999 flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-300 p-8">
@@ -57,8 +57,8 @@ export default function WormholeWidget() {
               GLOBAL TUNNEL OPEN
             </h2>
             <p className="text-sm font-mono text-zinc-400 mb-8 leading-relaxed">
-              Your localhost is now securely routed through the Cloudflare Edge Network. Latency
-              optimized.
+              Your localhost is now securely routed through the Cloudflare Edge
+              Network. Latency optimized.
             </p>
 
             <div className="mb-8 w-full">
@@ -88,5 +88,5 @@ export default function WormholeWidget() {
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -3,29 +3,29 @@
  */
 
 export interface SystemStats {
-  cpu: string
+  cpu: string;
   memory: {
-    total: string
-    free: string
-    usedPercentage: string
-  }
-  temperature: number
+    total: string;
+    free: string;
+    usedPercentage: string;
+  };
+  temperature: number;
   os: {
-    type: string
-    uptime: string
-  }
+    type: string;
+    uptime: string;
+  };
 }
 
 export interface AppItem {
-  name: string
-  id: string
+  name: string;
+  id: string;
 }
 
 export interface DriveInfo {
-  name: string
-  mount: string
-  type: string
-  size: number
-  used: number
-  available: number
+  name: string;
+  mount: string;
+  type: string;
+  size: number;
+  used: number;
+  available: number;
 }
