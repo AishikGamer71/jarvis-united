@@ -1,0 +1,8 @@
+{
+  "name": "@jarvis/agent-core",
+  "scripts": {
+    "dev": "uv run uvicorn api.server:app --reload --port 8420",
+    "build": "uv sync",
+    "test": "uv run pytest"
+  }
+}
