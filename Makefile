@@ -2,7 +2,7 @@
 
 install:
 	pnpm install
-	cd engine && pip install -r requirements.txt
+	cd engine && pip install -e .
 
 dev:
 	pnpm turbo run dev
@@ -11,7 +11,7 @@ build:
 	pnpm turbo run build
 
 test:
-	cd engine && pytest tests/
+	cd engine && pytest tests/unit/
 
 clean:
 	rm -rf node_modules

@@ -4,3 +4,8 @@ api_keys.json
 .chroma_db/
 __pycache__/
 out/
+.eslintcache
+electron.vite.config.*.mjs
+engine/storage/
+storage/
+*.egg-info/
