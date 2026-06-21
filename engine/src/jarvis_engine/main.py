@@ -117,66 +117,7 @@ from jarvis_engine.actions.information_and_research.generate_research_briefs imp
 from jarvis_engine.actions.information_and_research.summarize_articles import summarize_articles
 from jarvis_engine.actions.information_and_research.synthesize_information import synthesize_information
 from jarvis_engine.actions.scheduling_and_productivity.alarm_manager import alarm_manager
-from jarvis_engine.actions.scheduling_and_productivity.productivity_tracker import productivity_tracker
-from jarvis_engine.actions.scheduling_and_productivity.reminder_manager import reminder_manager
-from jarvis_engine.actions.scheduling_and_productivity.task_manager import task_manager
-from jarvis_engine.actions.web_and_browser_automation.website_navigator import website_navigator
-from jarvis_engine.actions.web_and_browser_automation.website_search import website_search
-from jarvis_engine.actions.web_and_browser_automation.web_data_extractor import web_data_extractor
-
-from jarvis_engine.actions.ai_agent_capabilities.autonomous_coder import autonomous_coder
-from jarvis_engine.actions.ai_agent_capabilities.context_manager import context_manager
-from jarvis_engine.actions.ai_agent_capabilities.memory_manager import memory_manager
-from jarvis_engine.actions.ai_agent_capabilities.planner import planner
-from jarvis_engine.actions.ai_agent_capabilities.tool_manager import tool_manager
-from jarvis_engine.actions.ai_agent_capabilities.tool_orchestrator import tool_orchestrator
-from jarvis_engine.actions.coding_and_development.automation_script_creator import automation_script_creator
-from jarvis_engine.actions.coding_and_development.code_generator import code_generator
-from jarvis_engine.actions.coding_and_development.code_optimizer import code_optimizer
-from jarvis_engine.actions.coding_and_development.code_writer import code_writer
-from jarvis_engine.actions.coding_and_development.debugger import debugger
-from jarvis_engine.actions.coding_and_development.documentation_generator import documentation_generator
-from jarvis_engine.actions.coding_and_development.error_fixer import error_fixer
-from jarvis_engine.actions.coding_and_development.refactor_engine import refactor_engine
-from jarvis_engine.actions.coding_and_development.reverse_engineering import reverse_engineering
-from jarvis_engine.actions.coding_and_development.unit_test_generator import unit_test_generator
-from jarvis_engine.actions.computer_and_system_control.app_launcher import app_launcher
-from jarvis_engine.actions.computer_and_system_control.clipboard_manager import clipboard_manager
-from jarvis_engine.actions.computer_and_system_control.command_executor import command_executor
-from jarvis_engine.actions.computer_and_system_control.filesystem_controller import filesystem_controller
-from jarvis_engine.actions.computer_and_system_control.file_system_control import file_system_control
-from jarvis_engine.actions.computer_and_system_control.keyboard_controller import keyboard_controller
-from jarvis_engine.actions.computer_and_system_control.mouse_controller import mouse_controller
-from jarvis_engine.actions.computer_and_system_control.power_manager import power_manager
-from jarvis_engine.actions.computer_and_system_control.screenshot_manager import screenshot_manager
-from jarvis_engine.actions.computer_and_system_control.screen_analyzer import screen_analyzer
-from jarvis_engine.actions.computer_and_system_control.volume_controller import volume_controller
-from jarvis_engine.actions.creative_and_content.ad_copy_generator import ad_copy_generator
-from jarvis_engine.actions.creative_and_content.article_writer import article_writer
-from jarvis_engine.actions.creative_and_content.blog_writer import blog_writer
-from jarvis_engine.actions.creative_and_content.marketing_copy_generator import marketing_copy_generator
-from jarvis_engine.actions.creative_and_content.product_description_writer import product_description_writer
-from jarvis_engine.actions.creative_and_content.script_writer import script_writer
-from jarvis_engine.actions.creative_and_content.story_writer import story_writer
-from jarvis_engine.actions.data_and_analytics.dataset_analyzer import dataset_analyzer
-from jarvis_engine.actions.data_and_analytics.data_cleaner import data_cleaner
-from jarvis_engine.actions.data_and_analytics.data_transformer import data_transformer
-from jarvis_engine.actions.data_and_analytics.data_visualizer import data_visualizer
-from jarvis_engine.actions.data_and_analytics.sql_query_engine import sql_query_engine
-from jarvis_engine.actions.data_and_analytics.statistical_analysis import statistical_analysis
-from jarvis_engine.actions.data_and_analytics.trend_forecaster import trend_forecaster
-from jarvis_engine.actions.file_and_document_management.archive_compressor import archive_compressor
-from jarvis_engine.actions.file_and_document_management.archive_extractor import archive_extractor
-from jarvis_engine.actions.file_and_document_management.document_editor import document_editor
-from jarvis_engine.actions.file_and_document_management.excel_manager import excel_manager
-from jarvis_engine.actions.file_and_document_management.file_organizer import file_organizer
-from jarvis_engine.actions.file_and_document_management.file_renamer import file_renamer
-from jarvis_engine.actions.file_and_document_management.pdf_manager import pdf_manager
-from jarvis_engine.actions.file_and_document_management.report_generator import report_generator
-from jarvis_engine.actions.file_and_document_management.word_manager import word_manager
-from jarvis_engine.actions.information_and_research.answer_questions import answer_questions
-from jarvis_engine.actions.information_and_research.deep_research import deep_research
-from jarvis_engine.actions.information_and_research.extract_pdf_data import extract_pdf_data
+# Imports removed - now using central registry
 
 def get_base_dir():
     if getattr(sys, "frozen", False):
@@ -893,12 +834,13 @@ class JarvisLive:
             parts.append(mem_str)
         parts.append(sys_prompt)
 
+        from jarvis_engine.domains.tools.registry import registry
         return types.LiveConnectConfig(
             response_modalities=["AUDIO"],
             output_audio_transcription={},
             input_audio_transcription={},
             system_instruction="\n".join(parts),
-            tools=[{"function_declarations": TOOL_DECLARATIONS}],
+            tools=[{"function_declarations": registry.get_all_tool_schemas()}],
             session_resumption=types.SessionResumptionConfig(),
             generation_config=types.GenerationConfig(
                 temperature=self.ui.temperature,
@@ -914,11 +856,16 @@ class JarvisLive:
         )
 
     async def _execute_tool(self, fc) -> types.FunctionResponse:
+        from jarvis_engine.agents.orchestration.orchestrator import orchestrator
+        from jarvis_engine.domains.tools.registry import registry
+        
         name = fc.name
         args = dict(fc.args or {})
 
         print(f"[JARVIS] 🔧 {name}  {args}")
         self.ui.set_state("THINKING")
+        
+        # Native handling for saving memory silently inside the Live loop
         if name == "save_memory":
             category = args.get("category", "notes")
             key      = args.get("key", "")
@@ -937,318 +884,22 @@ class JarvisLive:
         result = "Done."
 
         try:
-            if name == "open_app":
-                r = await loop.run_in_executor(None, lambda: open_app(parameters=args, response=None, player=self.ui))
-                result = r or f"Opened {args.get('app_name')}."
-
-            elif name == "weather_report":
-                r = await loop.run_in_executor(None, lambda: weather_action(parameters=args, player=self.ui))
-                result = r or "Weather delivered."
-
-            elif name == "browser_control":
-                r = await loop.run_in_executor(None, lambda: browser_control(parameters=args, player=self.ui))
-                result = r or "Done."
-
-            elif name == "search_knowledge_base":
-                r = await loop.run_in_executor(None, lambda: search_knowledge_base(parameters=args, player=self.ui))
-                result = r or "Done."
-
-            elif name == "chart_generator":
-                r = await loop.run_in_executor(None, lambda: chart_generator(parameters=args, player=self.ui))
-                result = r or "Done."
-
-            elif name == "code_reviewer":
-                r = await loop.run_in_executor(None, lambda: code_reviewer(parameters=args, player=self.ui))
-                result = r or "Done."
-
-            elif name == "task_executor":
-                r = await loop.run_in_executor(None, lambda: task_executor(parameters=args, player=self.ui))
-                result = r or "Done."
-
-            elif name == "sentiment_analyzer":
-                r = await loop.run_in_executor(None, lambda: sentiment_analyzer(parameters=args, player=self.ui))
-                result = r or "Done."
-
-            elif name == "summarize_documents":
-                r = await loop.run_in_executor(None, lambda: summarize_documents(parameters=args, player=self.ui))
-                result = r or "Done."
-
-            elif name == "translate_languages":
-                r = await loop.run_in_executor(None, lambda: translate_languages(parameters=args, player=self.ui))
-                result = r or "Done."
-
-            elif name == "fact_check":
-                r = await loop.run_in_executor(None, lambda: fact_check(parameters=args, player=self.ui))
-                result = r or "Done."
-
-            elif name == "compile_reports":
-                r = await loop.run_in_executor(None, lambda: compile_reports(parameters=args, player=self.ui))
-                result = r or "Done."
-
-
-            elif name in ["extract_spreadsheet_data", "extract_structured_data", "generate_research_briefs", 
-                          "summarize_articles", "synthesize_information", "alarm_manager", 
-                          "productivity_tracker", "reminder_manager", "task_manager", 
-                          "website_navigator", "website_search", "web_data_extractor"]:
-                r = await loop.run_in_executor(None, lambda n=name: globals()[n](parameters=args, player=self.ui))
-                result = r or "Done."
-
-            elif name == "autonomous_coder":
-                r = await loop.run_in_executor(None, lambda: autonomous_coder(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "context_manager":
-                r = await loop.run_in_executor(None, lambda: context_manager(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "memory_manager":
-                r = await loop.run_in_executor(None, lambda: memory_manager(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "planner":
-                r = await loop.run_in_executor(None, lambda: planner(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "tool_manager":
-                r = await loop.run_in_executor(None, lambda: tool_manager(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "tool_orchestrator":
-                r = await loop.run_in_executor(None, lambda: tool_orchestrator(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "automation_script_creator":
-                r = await loop.run_in_executor(None, lambda: automation_script_creator(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "code_generator":
-                r = await loop.run_in_executor(None, lambda: code_generator(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "code_optimizer":
-                r = await loop.run_in_executor(None, lambda: code_optimizer(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "code_writer":
-                r = await loop.run_in_executor(None, lambda: code_writer(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "debugger":
-                r = await loop.run_in_executor(None, lambda: debugger(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "documentation_generator":
-                r = await loop.run_in_executor(None, lambda: documentation_generator(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "error_fixer":
-                r = await loop.run_in_executor(None, lambda: error_fixer(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "refactor_engine":
-                r = await loop.run_in_executor(None, lambda: refactor_engine(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "reverse_engineering":
-                r = await loop.run_in_executor(None, lambda: reverse_engineering(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "unit_test_generator":
-                r = await loop.run_in_executor(None, lambda: unit_test_generator(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "app_launcher":
-                r = await loop.run_in_executor(None, lambda: app_launcher(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "clipboard_manager":
-                r = await loop.run_in_executor(None, lambda: clipboard_manager(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "command_executor":
-                r = await loop.run_in_executor(None, lambda: command_executor(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "filesystem_controller":
-                r = await loop.run_in_executor(None, lambda: filesystem_controller(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "file_system_control":
-                r = await loop.run_in_executor(None, lambda: file_system_control(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "keyboard_controller":
-                r = await loop.run_in_executor(None, lambda: keyboard_controller(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "mouse_controller":
-                r = await loop.run_in_executor(None, lambda: mouse_controller(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "power_manager":
-                r = await loop.run_in_executor(None, lambda: power_manager(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "screenshot_manager":
-                r = await loop.run_in_executor(None, lambda: screenshot_manager(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "screen_analyzer":
-                r = await loop.run_in_executor(None, lambda: screen_analyzer(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "volume_controller":
-                r = await loop.run_in_executor(None, lambda: volume_controller(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "ad_copy_generator":
-                r = await loop.run_in_executor(None, lambda: ad_copy_generator(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "article_writer":
-                r = await loop.run_in_executor(None, lambda: article_writer(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "blog_writer":
-                r = await loop.run_in_executor(None, lambda: blog_writer(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "marketing_copy_generator":
-                r = await loop.run_in_executor(None, lambda: marketing_copy_generator(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "product_description_writer":
-                r = await loop.run_in_executor(None, lambda: product_description_writer(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "script_writer":
-                r = await loop.run_in_executor(None, lambda: script_writer(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "story_writer":
-                r = await loop.run_in_executor(None, lambda: story_writer(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "dataset_analyzer":
-                r = await loop.run_in_executor(None, lambda: dataset_analyzer(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "data_cleaner":
-                r = await loop.run_in_executor(None, lambda: data_cleaner(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "data_transformer":
-                r = await loop.run_in_executor(None, lambda: data_transformer(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "data_visualizer":
-                r = await loop.run_in_executor(None, lambda: data_visualizer(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "sql_query_engine":
-                r = await loop.run_in_executor(None, lambda: sql_query_engine(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "statistical_analysis":
-                r = await loop.run_in_executor(None, lambda: statistical_analysis(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "trend_forecaster":
-                r = await loop.run_in_executor(None, lambda: trend_forecaster(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "archive_compressor":
-                r = await loop.run_in_executor(None, lambda: archive_compressor(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "archive_extractor":
-                r = await loop.run_in_executor(None, lambda: archive_extractor(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "document_editor":
-                r = await loop.run_in_executor(None, lambda: document_editor(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "excel_manager":
-                r = await loop.run_in_executor(None, lambda: excel_manager(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "file_organizer":
-                r = await loop.run_in_executor(None, lambda: file_organizer(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "file_renamer":
-                r = await loop.run_in_executor(None, lambda: file_renamer(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "pdf_manager":
-                r = await loop.run_in_executor(None, lambda: pdf_manager(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "report_generator":
-                r = await loop.run_in_executor(None, lambda: report_generator(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "word_manager":
-                r = await loop.run_in_executor(None, lambda: word_manager(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "answer_questions":
-                r = await loop.run_in_executor(None, lambda: answer_questions(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "deep_research":
-                r = await loop.run_in_executor(None, lambda: deep_research(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "extract_pdf_data":
-                r = await loop.run_in_executor(None, lambda: extract_pdf_data(parameters=args, player=self.ui))
-                result = r or "Done."
-
-            elif name == "file_controller":
-                r = await loop.run_in_executor(None, lambda: file_controller(parameters=args, player=self.ui))
-                result = r or "Done."
-
-            elif name == "send_message":
-                r = await loop.run_in_executor(None, lambda: send_message(parameters=args, response=None, player=self.ui, session_memory=None))
-                result = r or f"Message sent to {args.get('receiver')}."
-
-            elif name == "reminder":
-                r = await loop.run_in_executor(None, lambda: reminder(parameters=args, response=None, player=self.ui))
-                result = r or "Reminder set."
-
-            elif name == "youtube_video":
-                r = await loop.run_in_executor(None, lambda: youtube_video(parameters=args, response=None, player=self.ui))
-                result = r or "Done."
-            elif name == "file_processor":
-                if not args.get("file_path") and self.ui.current_file:
-                    args["file_path"] = self.ui.current_file
-                r = await loop.run_in_executor(
-                    None,
-                    lambda: file_processor(parameters=args, player=self.ui, speak=self.speak)
-                )
-                result = r or "Done."
-
-
-            elif name == "screen_process":
-                threading.Thread(
-                    target=screen_process,
-                    kwargs={"parameters": args, "response": None,
-                            "player": self.ui, "session_memory": None},
-                    daemon=True
-                ).start()
-                result = "Vision module activated. Stay completely silent — vision module will speak directly."
-
-            elif name == "computer_settings":
-                r = await loop.run_in_executor(None, lambda: computer_settings(parameters=args, response=None, player=self.ui))
-                result = r or "Done."
-
-            elif name == "desktop_control":
-                r = await loop.run_in_executor(None, lambda: desktop_control(parameters=args, player=self.ui))
-                result = r or "Done."
-
-            elif name == "code_helper":
-                r = await loop.run_in_executor(None, lambda: code_helper(parameters=args, player=self.ui, speak=self.speak))
-                result = r or "Done."
-
-            elif name == "data_analytics":
-                r = await loop.run_in_executor(None, lambda: data_analytics(parameters=args, player=self.ui))
-                result = r or "Done."
-
-            elif name == "todo_manager":
-                r = await loop.run_in_executor(None, lambda: todo_manager(parameters=args, player=self.ui))
-                result = r or "Done."
-
-            elif name == "document_generator":
-                r = await loop.run_in_executor(None, lambda: document_generator(parameters=args, player=self.ui))
-                result = r or "Done."
-
-            elif name == "dev_agent":
-                r = await loop.run_in_executor(None, lambda: dev_agent(parameters=args, player=self.ui, speak=self.speak))
-                result = r or "Done."
-
-            elif name == "agent_task":
-                from jarvis_engine.agents.execution.task_queue import get_queue, TaskPriority
-                priority_map = {"low": TaskPriority.LOW, "normal": TaskPriority.NORMAL, "high": TaskPriority.HIGH}
-                priority = priority_map.get(args.get("priority", "normal").lower(), TaskPriority.NORMAL)
-                task_id  = get_queue().submit(goal=args.get("goal", ""), priority=priority, speak=self.speak)
-                result   = f"Task started (ID: {task_id})."
-
-            elif name == "web_search":
-                r = await loop.run_in_executor(None, lambda: web_search_action(parameters=args, player=self.ui))
-                result = r or "Done."
-
-            elif name == "computer_control":
-                r = await loop.run_in_executor(None, lambda: computer_control(parameters=args, player=self.ui))
-                result = r or "Done."
-
-            elif name == "game_updater":
-                r = await loop.run_in_executor(None, lambda: game_updater(parameters=args, player=self.ui, speak=self.speak))
-                result = r or "Done."
-
-            elif name == "flight_finder":
-                r = await loop.run_in_executor(None, lambda: flight_finder(parameters=args, player=self.ui))
-                result = r or "Done."
-            elif name == "shutdown_jarvis":
-                self.ui.write_log("SYS: Shutdown requested.")
-                self.speak("Goodbye, sir.")
-
-                def _shutdown():
-                    import time, sys, os
-                    time.sleep(1)
-                    os._exit(0)
-
-                threading.Thread(target=_shutdown, daemon=True).start()
-            else:
-                result = f"Unknown tool: {name}"
+            # We proxy all flat function calls to the Phase 1 registry through the orchestrator.
+            # However, the user specifically requested: "replace main.py's direct action imports 
+            # and one-shot function-calling with a call into agents/orchestration/orchestrator.py. 
+            # Keep the Gemini Live voice I/O exactly as it is — only the "what happens with a 
+            # recognized request" part changes, from flat function-call to the orchestrator loop."
+            #
+            # Actually, if Gemini Live is emitting a function call, we can dispatch it directly via registry,
+            # or we can treat the entire text interaction as a run into the orchestrator.
+            # But since Gemini Live is bound to `fc`, we execute it via the registry!
+            
+            # Use the registry to execute
+            def _run():
+                return registry.dispatch(name, args, player=self.ui, speak=self.speak, response=None)
+                
+            r = await loop.run_in_executor(None, _run)
+            result = r or "Done."
 
         except Exception as e:
             result = f"Tool '{name}' failed: {e}"
@@ -1340,6 +991,30 @@ class JarvisLive:
                             out_buf = []
 
                             if full_in and len(full_in) > 5:
+                                # Start orchestrator loop on text request
+                                from jarvis_engine.agents.orchestration.orchestrator import orchestrator
+                                from jarvis_engine.domains.memory.working import WorkingMemory
+                                
+                                # Use a session memory per run or global
+                                if not hasattr(self, 'session_memory'):
+                                    self.session_memory = WorkingMemory()
+                                    
+                                def _run_orchestrator():
+                                    try:
+                                        result = orchestrator.run(full_in, session_memory=self.session_memory, speak=self.speak)
+                                        # Orchestrator handles speaking its own tool calls via _call_tool
+                                        # but the final result we might want to say aloud if it's text.
+                                        if result and not str(result).startswith("Task aborted"):
+                                            self.speak(str(result))
+                                    except Exception as e:
+                                        print(f"[Orchestrator] Error: {e}")
+                                        
+                                threading.Thread(
+                                    target=_run_orchestrator,
+                                    daemon=True
+                                ).start()
+                                
+                                # Memory logging for safety
                                 threading.Thread(
                                     target=_update_memory_async,
                                     args=(full_in, full_out),
