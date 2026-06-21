@@ -172,83 +172,27 @@ def _translate_to_goal_language(content: str, goal: str) -> str:
         return content
 
 def _call_tool(tool: str, parameters: dict, speak: Callable | None) -> str:
-
-    if tool == "open_app":
-        from jarvis_engine.actions.open_app import open_app
-        return open_app(parameters=parameters, player=None) or "Done."
-
-    elif tool == "web_search":
-        from jarvis_engine.actions.web_search import web_search
-        return web_search(parameters=parameters, player=None) or "Done."
-    elif tool == "game_updater":
-        from jarvis_engine.actions.game_updater import game_updater
-        return game_updater(parameters=parameters, player=None, speak=speak) or "Done."
-    elif tool == "browser_control":
-        from jarvis_engine.actions.browser_control import browser_control
-        return browser_control(parameters=parameters, player=None) or "Done."
-
-    elif tool == "file_controller":
-        from jarvis_engine.actions.file_controller import file_controller
-        return file_controller(parameters=parameters, player=None) or "Done."
-
-    elif tool == "cmd_control":
-        from jarvis_engine.actions.cmd_control import cmd_control
-        return cmd_control(parameters=parameters, player=None) or "Done."
-
-    elif tool == "code_helper":
-        from jarvis_engine.actions.code_helper import code_helper
-        return code_helper(parameters=parameters, player=None, speak=speak) or "Done."
-
-    elif tool == "dev_agent":
-        from jarvis_engine.actions.dev_agent import dev_agent
-        return dev_agent(parameters=parameters, player=None, speak=speak) or "Done."
-
-    elif tool == "screen_process":
-        from jarvis_engine.actions.screen_processor import screen_process
-        screen_process(parameters=parameters, player=None)
-        return "Screen captured and analyzed."
-
-    elif tool == "send_message":
-        from jarvis_engine.actions.send_message import send_message
-        return send_message(parameters=parameters, player=None) or "Done."
-
-    elif tool == "reminder":
-        from jarvis_engine.actions.reminder import reminder
-        return reminder(parameters=parameters, player=None) or "Done."
-
-    elif tool == "youtube_video":
-        from jarvis_engine.actions.youtube_video import youtube_video
-        return youtube_video(parameters=parameters, player=None) or "Done."
-
-    elif tool == "weather_report":
-        from jarvis_engine.actions.weather_report import weather_action
-        return weather_action(parameters=parameters, player=None) or "Done."
-
-    elif tool == "computer_settings":
-        from jarvis_engine.actions.computer_settings import computer_settings
-        return computer_settings(parameters=parameters, player=None) or "Done."
-
-    elif tool == "desktop_control":
-        from jarvis_engine.actions.desktop import desktop_control
-        return desktop_control(parameters=parameters, player=None) or "Done."
-
-    elif tool == "computer_control":
-        from jarvis_engine.actions.computer_control import computer_control
-        return computer_control(parameters=parameters, player=None) or "Done."
-
-    elif tool == "generated_code":
+    from jarvis_engine.domains.tools.registry import registry
+    
+    # Check if tool is in registry
+    if tool in registry._tools:
+        try:
+            result = registry.dispatch(tool, parameters, speak=speak, player=None)
+            if not result:
+                result = "Done."
+            return str(result)
+        except Exception as e:
+            raise RuntimeError(f"Tool execution failed: {e}")
+            
+    # Fallback to generated code if tool not found or explicitly requested
+    if tool == "generated_code":
         description = parameters.get("description", "")
         if not description:
             raise ValueError("generated_code requires a 'description' parameter.")
         return _run_generated_code(description, speak=speak)
 
-    elif tool == "flight_finder":
-        from jarvis_engine.actions.flight_finder import flight_finder
-        return flight_finder(parameters=parameters, player=None, speak=speak) or "Done."
-
-    else:
-        print(f"[Executor] ⚠️ Unknown tool '{tool}' — falling back to generated_code")
-        return _run_generated_code(f"Accomplish this task: {parameters}", speak=speak)
+    print(f"[Executor] ⚠️ Unknown tool '{tool}' — falling back to generated_code")
+    return _run_generated_code(f"Accomplish this task: {parameters}", speak=speak)
 
 class AgentExecutor:
 
