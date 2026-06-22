@@ -4,6 +4,11 @@ from pathlib import Path
 _CONFIG_PATH = Path(__file__).parent / "api_keys.json"
 
 def get_config() -> dict:
+    if not _CONFIG_PATH.exists():
+        raise FileNotFoundError(
+            f"JARVIS config not found at {_CONFIG_PATH}. "
+            "Copy config/api_keys.example.json to config/api_keys.json and fill in your values."
+        )
     with open(_CONFIG_PATH, "r", encoding="utf-8") as f:
         return json.load(f)
 
