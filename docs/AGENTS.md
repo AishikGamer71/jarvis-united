@@ -1,14 +1,15 @@
-# JARVIS Multi-Agent System
+# JARVIS Agent Architecture
 
-## Agent Hierarchy
+## Agent Loop
+The core of JARVIS is a multi-step agent loop orchestrated in `agents/orchestration/orchestrator.py`. 
+When a user prompt enters `main.py`, it is passed to the Orchestrator, which loops over the following steps (capped at 5 iterations):
+1. **Prompt Build**: Generates the context using `prompt_builder.py`.
+2. **LLM Query**: Consults the LLM via `domains/llm/router.py`.
+3. **Dispatch**: If the LLM generates a tool call, `agents/execution/executor.py` dispatches it to the relevant action tool.
+4. **Observation**: Results are returned back to the LLM to decide on the next step or conclude.
 
-1. **Orchestrator**: The main entry point. Decides which specialist to invoke based on user intent.
-2. **Supervisor**: Monitors execution, handles error loops, and ensures tasks align with the initial goal.
+## Memory Layer
+The conversation history and volatile state are maintained via `domains/memory/working.py`. This ensures context is retained across iterative tool calls within a single user request.
 
-## Specialists
-
-- **DevAgent**: Writes, refactors, and debugs code.
-- **ResearchAgent**: Scrapes the web, reads docs, and synthesizes answers.
-- **SystemAgent**: Interacts with the local OS (files, apps, settings).
-- **CreativeAgent**: Handles content generation, writing, and brainstorming.
-- **DataAgent**: Analyzes data, executes SQL, and generates charts.
+## Execution
+`agents/execution/executor.py` handles the physical dispatching of tools and routes them to the actual implementations under `actions/`.

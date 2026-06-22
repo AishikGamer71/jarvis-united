@@ -1,14 +1,10 @@
 # JARVIS Skill System
 
-The skill system replaces the old `/actions` directory. It uses a dynamic hot-reloading mechanism (`skill_loader.py`) and strict validation (`skill_manifest.py`).
+The skill system allows for procedural self-improvement and custom extensions.
 
-## Builtin Skills
-- `computer/`: OS interactions (launching apps, changing settings).
-- `files/`: File system operations.
-- `web/`: Browsing, scraping.
-- `comms/`: Emails, messaging.
-- `data/`: Data pipelines.
-- `schedule/`: Reminders, calendars.
+## Core Concepts
+- **`skills/skill_loader.py`**: A mechanism to dynamically load tools/skills at runtime.
+- **`skills/skill_manifest.py`**: The strict schema validation system to ensure any new skill complies with the expected input and output parameters.
 
-## External Skills
-Users can drop Python modules into `engine/skills/external/` to extend JARVIS dynamically without restarting the engine.
+## Adding Skills
+Skills are essentially new programmatic abilities. When the agent loop successfully discovers a new reliable routine (or the user manually writes a new tool), it is documented using the `skill_manifest.py` schema, enabling JARVIS to reuse it without manual hardcoding in the core engine.

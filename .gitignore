@@ -12,3 +12,4 @@ storage/
 .turbo/
 apps/desktop/.turbo/
 package-lock.json
+.env.vault
